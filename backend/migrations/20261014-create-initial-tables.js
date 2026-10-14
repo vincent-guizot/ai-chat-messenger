@@ -1,8 +1,8 @@
-'use strict';
+"use strict";
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('Users', {
+    await queryInterface.createTable("Users", {
       id: {
         type: Sequelize.UUID,
         primaryKey: true,
@@ -38,7 +38,7 @@ module.exports = {
       },
     });
 
-    await queryInterface.createTable('Conversations', {
+    await queryInterface.createTable("Conversations", {
       id: {
         type: Sequelize.UUID,
         primaryKey: true,
@@ -47,7 +47,7 @@ module.exports = {
       },
       type: {
         type: Sequelize.STRING,
-        defaultValue: 'dm',
+        defaultValue: "dm",
       },
       title: {
         type: Sequelize.STRING,
@@ -57,11 +57,11 @@ module.exports = {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
-          model: 'Users',
-          key: 'id',
+          model: "Users",
+          key: "id",
         },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
       },
       createdAt: {
         type: Sequelize.DATE,
@@ -75,7 +75,7 @@ module.exports = {
       },
     });
 
-    await queryInterface.createTable('Participants', {
+    await queryInterface.createTable("Participants", {
       id: {
         type: Sequelize.UUID,
         primaryKey: true,
@@ -86,25 +86,25 @@ module.exports = {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
-          model: 'Conversations',
-          key: 'id',
+          model: "Conversations",
+          key: "id",
         },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
       },
       userId: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
-          model: 'Users',
-          key: 'id',
+          model: "Users",
+          key: "id",
         },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
       },
       role: {
         type: Sequelize.STRING,
-        defaultValue: 'member',
+        defaultValue: "member",
       },
       joinedAt: {
         type: Sequelize.DATE,
@@ -113,7 +113,7 @@ module.exports = {
       },
     });
 
-    await queryInterface.createTable('Messages', {
+    await queryInterface.createTable("Messages", {
       id: {
         type: Sequelize.UUID,
         primaryKey: true,
@@ -124,25 +124,25 @@ module.exports = {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
-          model: 'Conversations',
-          key: 'id',
+          model: "Conversations",
+          key: "id",
         },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
       },
       senderId: {
         type: Sequelize.UUID,
         allowNull: true,
         references: {
-          model: 'Users',
-          key: 'id',
+          model: "Users",
+          key: "id",
         },
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL',
+        onUpdate: "CASCADE",
+        onDelete: "SET NULL",
       },
       senderRole: {
         type: Sequelize.STRING,
-        defaultValue: 'user',
+        defaultValue: "user",
       },
       content: {
         type: Sequelize.TEXT,
@@ -166,9 +166,9 @@ module.exports = {
   },
 
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('Messages');
-    await queryInterface.dropTable('Participants');
-    await queryInterface.dropTable('Conversations');
-    await queryInterface.dropTable('Users');
+    await queryInterface.dropTable("Messages");
+    await queryInterface.dropTable("Participants");
+    await queryInterface.dropTable("Conversations");
+    await queryInterface.dropTable("Users");
   },
 };

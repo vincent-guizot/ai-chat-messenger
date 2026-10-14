@@ -1,6 +1,7 @@
 # AI Chat Messenger
 
 AI chat messenger app with:
+
 - user-to-user messaging
 - AI assistant
 - real-time chat using Socket.IO
@@ -9,6 +10,7 @@ AI chat messenger app with:
 - Ollama as default AI backend
 
 ## Tech Stack
+
 - Frontend: React + Vite
 - Backend: Node.js + Express + Socket.IO
 - Database: PostgreSQL + Prisma
@@ -16,13 +18,16 @@ AI chat messenger app with:
 - AI: Ollama (recommended) / Hugging Face
 
 ## Requirements
+
 - Node.js 18+
 - PostgreSQL
 - Ollama (recommended)
 - npm
 
 ## Backend setup
+
 1. Create database:
+
    ```bash
    psql -U postgres
    CREATE DATABASE ai_chat;
@@ -30,6 +35,7 @@ AI chat messenger app with:
    ```
 
 2. Create backend/.env:
+
    ```env
    DATABASE_URL=postgresql://postgres:postgres@localhost:5432/ai_chat?schema=public
    JWT_SECRET=your_super_secret_key
@@ -39,17 +45,20 @@ AI chat messenger app with:
    ```
 
 3. Install dependencies:
+
    ```bash
    cd backend
    npm install
    ```
 
 4. Generate Prisma client:
+
    ```bash
    npx prisma generate
    ```
 
 5. Run migrations:
+
    ```bash
    npx prisma migrate dev --name init
    ```
@@ -60,6 +69,7 @@ AI chat messenger app with:
    ```
 
 ## AI setup (recommended: Ollama)
+
 1. Install Ollama
 2. Pull model:
    ```bash
@@ -67,12 +77,15 @@ AI chat messenger app with:
    ```
 
 ## Frontend setup
+
 1. Create frontend/.env:
+
    ```env
    VITE_API_BASE=http://localhost:3000
    ```
 
 2. Install dependencies:
+
    ```bash
    cd frontend
    npm install
@@ -84,10 +97,12 @@ AI chat messenger app with:
    ```
 
 Open:
+
 - Frontend: http://localhost:5173
 - Backend: http://localhost:3000
 
 ## Features
+
 - Login / signup
 - Real-time messaging
 - AI assistant room
@@ -95,5 +110,6 @@ Open:
 - Dark premium UI
 
 ## Notes
+
 - For "gratis + banyak token", Ollama is the best option.
 - Hugging Face works too, but is hosted and depends on rate limits.

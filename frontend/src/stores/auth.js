@@ -1,9 +1,9 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
-const STORAGE_KEY = 'ai_chat_auth';
+const STORAGE_KEY = "ai_chat_auth";
 
 function readPersistedAuth() {
-  if (typeof window === 'undefined') return { token: null, user: null };
+  if (typeof window === "undefined") return { token: null, user: null };
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -26,13 +26,13 @@ export const useAuthStore = create((set) => {
     token: initial.token,
     user: initial.user,
     setAuth: (token, user) => {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ token, user }));
       }
       set({ token, user });
     },
     clearAuth: () => {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         localStorage.removeItem(STORAGE_KEY);
       }
       set({ token: null, user: null });

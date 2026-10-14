@@ -5,6 +5,7 @@ CREATE TABLE "User" (
     "name" TEXT,
     "passwordHash" TEXT NOT NULL,
     "avatarUrl" TEXT,
+    "lastSeenAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

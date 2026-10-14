@@ -3,78 +3,89 @@ const bcrypt = require('bcrypt');
 
 async function seed() {
   try {
-    const passwordHash = await bcrypt.hash('password123', 10);
+    // Create admin user (demo account)
+    const passwordPlain = 'password123';
+    const passwordHash = await bcrypt.hash(passwordPlain, 10);
 
-    const demoUser = await prisma.user.upsert({
-      where: { email: 'demo@example.com' },
+    const adminUser = await prisma.user.upsert({
+      where: { email: 'admin@mail.com' },
       update: {},
       create: {
-        email: 'demo@example.com',
-        name: 'Demo User',
-        passwordHash,
-      }
+        email: 'admin@mail.com',
+        name: 'Admin 125',
+        passwordHash: passwordHash,
+      },
     });
 
-    const assistant = await prisma.user.upsert({
+    // Create an assistant user used by AI conversations
+    const assistantHash = await bcrypt.hash('assistant-secret', 10);
+    const assistantUser = await prisma.user.upsert({
       where: { email: 'assistant@ai-chat.local' },
       update: {},
       create: {
         email: 'assistant@ai-chat.local',
         name: 'AI Assistant',
-        passwordHash: await bcrypt.hash('assistant-secret', 10),
-      }
+        passwordHash: assistantHash,
+      },
     });
 
-    const conversation = await prisma.conversation.upsert({
-      where: { id: '33333333-3333-4333-8333-333333333333' },
-      update: {},
-      create: {
-        id: '33333333-3333-4333-8333-333333333333',
+    // Create an AI conversation and attach participants
+    const conversation = await prisma.conversation.create({
+      data: {
         type: 'ai',
         title: 'AI Assistant',
-        createdById: demoUser.id,
+        createdById: adminUser.id,
         participants: {
           create: [
-            { userId: demoUser.id, role: 'member' },
-            { userId: assistant.id, role: 'assistant' }
-          ]
-        }
+            {
+              userId: adminUser.id,
+              role: 'member',
+            },
+            {
+              userId: assistantUser.id,
+              role: 'assistant',
+            },
+          ],
+        },
       },
-      include: { participants: true }
+      include: {
+        participants: true,
+      },
     });
 
-    await prisma.message.upsert({
-      where: { id: '66666666-6666-4666-8666-666666666666' },
-      update: {},
-      create: {
-        id: '66666666-6666-4666-8666-666666666666',
+    // Create a couple of starter messages in the conversation
+    await prisma.message.create({
+      data: {
         conversationId: conversation.id,
-        senderId: demoUser.id,
+        senderId: adminUser.id,
         senderRole: 'user',
         content: 'Halo AI, bantu saya belajar Node.js.',
-        metadata: { provider: 'demo' }
-      }
+        metadata: { provider: 'demo' },
+      },
     });
 
-    await prisma.message.upsert({
-      where: { id: '77777777-7777-4777-8777-777777777777' },
-      update: {},
-      create: {
-        id: '77777777-7777-4777-8777-777777777777',
+    await prisma.message.create({
+      data: {
         conversationId: conversation.id,
-        senderId: assistant.id,
+        senderId: assistantUser.id,
         senderRole: 'assistant',
-        content: 'Tentu! Node.js adalah runtime JavaScript berbasis V8 untuk backend. Kita bisa belajar tentang event loop, Express, serta API dan database.',
-        metadata: { provider: 'assistant', model: 'demo' }
-      }
+        content:
+          'Tentu! Node.js adalah runtime JavaScript berbasis V8 untuk backend. Kita bisa belajar tentang event loop, Express, serta API dan database.',
+        metadata: { provider: 'assistant', model: 'demo' },
+      },
     });
 
-    console.log('Seed finished');
-  } catch (err) {
-    console.error('Seed error', err);
+    console.log('Prisma seed finished successfully.');
+  } catch (error) {
+    console.error('Seed error:', error);
+    process.exitCode = 1;
   } finally {
     await prisma.$disconnect();
   }
 }
 
-seed();
+if (require.main === module) {
+  seed();
+}
+
+module.exports = seed;

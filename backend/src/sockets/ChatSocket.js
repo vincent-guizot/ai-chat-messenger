@@ -2,11 +2,27 @@ const TokenService = require('../services/TokenService');
 const ConversationService = require('../services/ConversationService');
 const MessageService = require('../services/MessageService');
 const AssistantService = require('../services/AssistantService');
+const PresenceService = require('../services/PresenceService');
+const UserService = require('../services/UserService');
 
 /**
  * Event Socket.IO yang didukung:
- *   client -> server : "join", "leave", "message:create"
- *   server -> client : "message:new", "error"
+ *
+ *   client -> server
+ *     "join"            { conversationId }
+ *     "leave"           { conversationId }
+ *     "message:create"  { conversationId, content }
+ *     "typing"          { conversationId, isTyping }
+ *
+ *   server -> client
+ *     "message:new"       pesan baru (dikirim ke semua peserta percakapan)
+ *     "typing"            { conversationId, userId, isTyping }
+ *     "assistant:typing"  { conversationId, isTyping }
+ *     "presence:update"   { userId, online, lastSeenAt }
+ *     "error"             { message }
+ *
+ * Setiap socket yang login otomatis masuk ke room pribadi "user:<id>",
+ * sehingga pesan DM tetap sampai walaupun percakapannya belum dibuka.
  */
 class ChatSocket {
   static register(io) {
@@ -15,6 +31,10 @@ class ChatSocket {
     io.on('connection', (socket) => {
       ChatSocket.handleConnection(io, socket);
     });
+  }
+
+  static userRoom(userId) {
+    return `user:${userId}`;
   }
 
   /**
@@ -39,6 +59,10 @@ class ChatSocket {
   }
 
   static handleConnection(io, socket) {
+    if (socket.user) {
+      ChatSocket.handleUserOnline(io, socket);
+    }
+
     socket.on('join', (payload) => {
       ChatSocket.handleJoin(socket, payload);
     });
@@ -50,7 +74,58 @@ class ChatSocket {
     socket.on('message:create', (payload) => {
       ChatSocket.handleMessageCreate(io, socket, payload);
     });
+
+    socket.on('typing', (payload) => {
+      ChatSocket.handleTyping(io, socket, payload);
+    });
+
+    socket.on('disconnect', () => {
+      if (socket.user) {
+        ChatSocket.handleUserOffline(io, socket);
+      }
+    });
   }
+
+  // --- Presence --------------------------------------------------------------
+
+  static handleUserOnline(io, socket) {
+    const userId = socket.user.id;
+
+    socket.join(ChatSocket.userRoom(userId));
+
+    const justCameOnline = PresenceService.addConnection(userId);
+
+    if (justCameOnline) {
+      io.emit('presence:update', {
+        userId: userId,
+        online: true,
+        lastSeenAt: null,
+      });
+    }
+  }
+
+  static async handleUserOffline(io, socket) {
+    const userId = socket.user.id;
+    const wentOffline = PresenceService.removeConnection(userId);
+
+    if (!wentOffline) {
+      return;
+    }
+
+    try {
+      const updatedUser = await UserService.updateLastSeen(userId);
+
+      io.emit('presence:update', {
+        userId: userId,
+        online: false,
+        lastSeenAt: updatedUser.lastSeenAt,
+      });
+    } catch (error) {
+      console.error('failed to update lastSeenAt', error.message);
+    }
+  }
+
+  // --- Rooms -----------------------------------------------------------------
 
   static async handleJoin(socket, payload) {
     if (!payload || !payload.conversationId || !socket.user) {
@@ -71,6 +146,44 @@ class ChatSocket {
 
     socket.leave(payload.conversationId);
   }
+
+  /**
+   * Room tujuan untuk sebuah percakapan: room percakapan + room pribadi setiap peserta.
+   * Socket.IO otomatis mencegah satu socket menerima event yang sama dua kali.
+   */
+  static async conversationAudience(conversationId) {
+    const participantIds = await ConversationService.findHumanParticipantIds(conversationId);
+    const rooms = participantIds.map(ChatSocket.userRoom);
+
+    rooms.push(conversationId);
+
+    return rooms;
+  }
+
+  // --- Typing ----------------------------------------------------------------
+
+  static async handleTyping(io, socket, payload) {
+    if (!socket.user || !payload || !payload.conversationId) {
+      return;
+    }
+
+    const isParticipant = await ConversationService.isParticipant(payload.conversationId, socket.user.id);
+
+    if (!isParticipant) {
+      return;
+    }
+
+    const audience = await ChatSocket.conversationAudience(payload.conversationId);
+
+    // Kirim ke semua peserta kecuali tab milik pengirim sendiri.
+    socket.to(audience).except(ChatSocket.userRoom(socket.user.id)).emit('typing', {
+      conversationId: payload.conversationId,
+      userId: socket.user.id,
+      isTyping: payload.isTyping === true,
+    });
+  }
+
+  // --- Pesan -----------------------------------------------------------------
 
   static async handleMessageCreate(io, socket, payload) {
     try {
@@ -97,18 +210,36 @@ class ChatSocket {
         return;
       }
 
+      const audience = await ChatSocket.conversationAudience(conversationId);
+
       const userMessage = await MessageService.createUserMessage(conversationId, socket.user.id, content);
       await ConversationService.touch(conversationId);
-      io.to(conversationId).emit('message:new', userMessage);
+      io.to(audience).emit('message:new', userMessage);
 
-      const assistantMessage = await AssistantService.replyToConversation(conversationId);
-
-      if (assistantMessage) {
-        io.to(conversationId).emit('message:new', assistantMessage);
-      }
+      await ChatSocket.replyWithAssistant(io, audience, conversationId);
     } catch (error) {
       console.error('message:create error', error);
       socket.emit('error', { message: error.message || 'server error' });
+    }
+  }
+
+  static async replyWithAssistant(io, audience, conversationId) {
+    const hasAssistant = await ConversationService.hasAssistant(conversationId);
+
+    if (!hasAssistant) {
+      return;
+    }
+
+    io.to(audience).emit('assistant:typing', { conversationId: conversationId, isTyping: true });
+
+    try {
+      const assistantMessage = await AssistantService.replyToConversation(conversationId);
+
+      if (assistantMessage) {
+        io.to(audience).emit('message:new', assistantMessage);
+      }
+    } finally {
+      io.to(audience).emit('assistant:typing', { conversationId: conversationId, isTyping: false });
     }
   }
 }

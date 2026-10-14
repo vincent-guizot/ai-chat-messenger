@@ -8,6 +8,7 @@ router.use(AuthMiddleware.requireAuth);
 
 router.get('/', ConversationController.index);
 router.post('/', ConversationController.store);
+router.post('/direct', ConversationController.direct);
 router.get('/:id/messages', ConversationController.messages);
 
 module.exports = router;

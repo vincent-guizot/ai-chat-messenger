@@ -3,6 +3,7 @@ const { Server } = require('socket.io');
 const Environment = require('./config/environment');
 const app = require('./app');
 const ChatSocket = require('./sockets/ChatSocket');
+const DatabaseCheckService = require('./services/DatabaseCheckService');
 
 /**
  * Membuat HTTP server + Socket.IO server.
@@ -32,10 +33,15 @@ function startServer(port) {
   });
 }
 
+async function main() {
+  await DatabaseCheckService.ensureReady();
+  await startServer(Environment.port);
+
+  console.log(`AI Chat Messenger backend listening on http://localhost:${Environment.port}`);
+}
+
 if (require.main === module) {
-  startServer(Environment.port).then(() => {
-    console.log(`AI Chat Messenger backend listening on http://localhost:${Environment.port}`);
-  });
+  main();
 }
 
 module.exports = { createServer: createServer, startServer: startServer };

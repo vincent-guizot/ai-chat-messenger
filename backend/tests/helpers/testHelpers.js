@@ -1,5 +1,5 @@
 const request = require('supertest');
-const prisma = require('../../src/config/database');
+const prisma = require('../../prisma/prisma');
 const app = require('../../src/app');
 
 class TestHelpers {

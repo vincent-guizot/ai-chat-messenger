@@ -1,3 +1,5 @@
+import { useAuthStore } from '../stores/authStore';
+
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
 /**
@@ -25,6 +27,12 @@ class ApiClient {
     }
 
     const response = await fetch(`${API_BASE}${path}`, fetchOptions);
+
+    // Token kedaluwarsa / tidak valid -> keluarkan user ke halaman login.
+    if (response.status === 401 && requestOptions.token) {
+      useAuthStore.getState().clearAuth();
+    }
+
     const data = await response.json();
 
     if (!data.ok) {

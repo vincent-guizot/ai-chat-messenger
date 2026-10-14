@@ -1,40 +1,116 @@
 import { useEffect, useRef } from 'react';
+import { AnimatePresence } from 'motion/react';
+import { LoaderCircle, SearchX } from 'lucide-react';
+import Avatar from '../ui/Avatar';
 import MessageBubble from './MessageBubble';
-import TypingIndicator from './TypingIndicator';
+import TypingBubble from './TypingBubble';
+import SuggestionChips, { ASSISTANT_SUGGESTIONS } from './SuggestionChips';
+
+/**
+ * Mencari nama & jenis pengirim sebuah pesan dari daftar peserta percakapan.
+ */
+function findSender(message, conversation) {
+  if (message.senderRole === 'assistant') {
+    return { name: 'AI Assistant', isAssistant: true };
+  }
+
+  const participant = conversation.participants.find((item) => item.userId === message.senderId);
+
+  if (participant && participant.user) {
+    return { name: participant.user.name, isAssistant: false };
+  }
+
+  return { name: 'Unknown', isAssistant: false };
+}
+
+function isSameSender(firstMessage, secondMessage) {
+  if (!firstMessage || !secondMessage) {
+    return false;
+  }
+
+  return firstMessage.senderRole === secondMessage.senderRole && firstMessage.senderId === secondMessage.senderId;
+}
+
+function CenteredNotice(props) {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center text-slate-500 dark:text-slate-400">
+      {props.icon}
+      <p className="max-w-sm text-[15px]">{props.children}</p>
+    </div>
+  );
+}
 
 export default function MessageList(props) {
-  const containerRef = useRef(null);
+  const bottomRef = useRef(null);
+  const messages = props.messages;
+  const conversation = props.conversation;
 
-  // Selalu scroll ke pesan paling bawah ketika ada pesan baru.
+  // Scroll ke pesan paling bawah setiap ada pesan baru / indikator mengetik.
   useEffect(() => {
-    const container = containerRef.current;
-
-    if (container) {
-      container.scrollTop = container.scrollHeight;
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
-  }, [props.messages, props.isAssistantTyping]);
+  }, [messages.length, props.typingInfo.assistant, props.typingInfo.userIds.length, conversation.id]);
 
-  const showEmptyState = !props.isLoading && props.messages.length === 0;
+  if (props.isLoading) {
+    return (
+      <CenteredNotice icon={<LoaderCircle className="h-6 w-6 animate-spin text-brand-500" />}>Loading messages...</CenteredNotice>
+    );
+  }
+
+  const isSearching = props.searchText.trim() !== '';
+  const lastMessage = messages[messages.length - 1];
+
+  const showSuggestions =
+    props.isAssistant &&
+    !isSearching &&
+    !props.typingInfo.assistant &&
+    Boolean(lastMessage) &&
+    lastMessage.senderRole === 'assistant';
+
+  let otherUserName = 'them';
+  if (props.otherUser && props.otherUser.name) {
+    otherUserName = props.otherUser.name;
+  }
 
   return (
-    <div ref={containerRef} className="flex h-[68vh] flex-col gap-3 overflow-y-auto pr-1">
-      {props.isLoading && (
-        <div className="rounded-xl border border-slate-700 bg-slate-800/70 px-3 py-2 text-sm text-slate-300">
-          Loading messages...
-        </div>
+    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5 px-4 py-6 sm:px-8">
+      {messages.length === 0 && isSearching && (
+        <CenteredNotice icon={<SearchX className="h-6 w-6" />}>No messages match “{props.searchText}”.</CenteredNotice>
       )}
 
-      {showEmptyState && (
-        <div className="grid h-full place-items-center text-sm uppercase tracking-[0.18em] text-violet-300/80">
-          Start the conversation
-        </div>
+      {messages.length === 0 && !isSearching && !props.isAssistant && (
+        <CenteredNotice icon={<Avatar name={otherUserName} size="lg" />}>
+          This is the beginning of your chat with <strong className="text-slate-700 dark:text-white">{otherUserName}</strong>. Say hi! 👋
+        </CenteredNotice>
       )}
 
-      {props.messages.map((message) => (
-        <MessageBubble key={message.id} message={message} currentUserId={props.currentUserId} />
-      ))}
+      {messages.map((message, index) => {
+        const previousMessage = messages[index - 1];
+        const isOwn = message.senderRole === 'user' && message.senderId === props.currentUserId;
 
-      {props.isAssistantTyping && <TypingIndicator />}
+        return (
+          <MessageBubble
+            key={message.id}
+            message={message}
+            isOwn={isOwn}
+            sender={findSender(message, conversation)}
+            showAvatar={!isSameSender(previousMessage, message)}
+          />
+        );
+      })}
+
+      <AnimatePresence>
+        {props.typingInfo.assistant && <TypingBubble key="assistant-typing" isAssistant />}
+
+        {!props.isAssistant && props.typingInfo.userIds.length > 0 && (
+          <TypingBubble key="user-typing" name={otherUserName} />
+        )}
+      </AnimatePresence>
+
+      {showSuggestions && <SuggestionChips suggestions={ASSISTANT_SUGGESTIONS} onSelect={props.onSuggestion} />}
+
+      <div ref={bottomRef} />
     </div>
   );
 }

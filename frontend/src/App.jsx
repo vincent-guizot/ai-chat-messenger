@@ -1,9 +1,13 @@
-import React from "react";
-import { useAuthStore } from "./stores/auth";
-import Login from "./views/Login";
-import ChatView from "./views/ChatView";
+import { useAuthStore } from './stores/authStore';
+import LoginPage from './pages/LoginPage';
+import ChatPage from './pages/ChatPage';
 
 export default function App() {
-  const { token } = useAuthStore();
-  return token ? <ChatView /> : <Login />;
+  const token = useAuthStore((state) => state.token);
+
+  if (token) {
+    return <ChatPage />;
+  }
+
+  return <LoginPage />;
 }

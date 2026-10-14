@@ -1,59 +1,93 @@
 const request = require('supertest');
-const { sequelize } = require('../models');
-const { app } = require('../index');
+const app = require('../src/app');
+const TestHelpers = require('./helpers/testHelpers');
 
 beforeAll(async () => {
-  await sequelize.authenticate();
-  await sequelize.sync({ force: true });
+  await TestHelpers.resetDatabase();
 });
 
 afterAll(async () => {
-  await sequelize.close();
+  await TestHelpers.disconnect();
 });
-
-async function signupUser(email, password, name = 'User') {
-  const response = await request(app)
-    .post('/api/auth/signup')
-    .send({ email, password, name });
-
-  expect(response.statusCode).toBe(200);
-  return response.body;
-}
 
 describe('Conversation API', () => {
   test('user can create a conversation and fetch its messages', async () => {
-    const firstUser = await signupUser('alice@example.com', 'password123', 'Alice');
-    const secondUser = await signupUser('bob@example.com', 'password123', 'Bob');
+    const alice = await TestHelpers.signupUser('alice@example.com', 'password123', 'Alice');
+    const bob = await TestHelpers.signupUser('bob@example.com', 'password123', 'Bob');
 
-    const createRes = await request(app)
+    const createResponse = await request(app)
       .post('/api/conversations')
-      .set('Authorization', `Bearer ${firstUser.token}`)
+      .set('Authorization', `Bearer ${alice.token}`)
       .send({
         type: 'dm',
         title: 'Alice & Bob',
-        participantIds: [secondUser.user.id],
+        participantIds: [bob.user.id],
       });
 
-    expect(createRes.statusCode).toBe(200);
-    expect(createRes.body.ok).toBe(true);
-    expect(createRes.body.conversation).toBeDefined();
+    expect(createResponse.statusCode).toBe(200);
+    expect(createResponse.body.ok).toBe(true);
+    expect(createResponse.body.conversation.participants).toHaveLength(2);
 
-    const conversationId = createRes.body.conversation.id;
+    const conversationId = createResponse.body.conversation.id;
 
-    const listRes = await request(app)
+    const listResponse = await request(app)
       .get('/api/conversations')
-      .set('Authorization', `Bearer ${firstUser.token}`);
+      .set('Authorization', `Bearer ${alice.token}`);
 
-    expect(listRes.statusCode).toBe(200);
-    expect(listRes.body.ok).toBe(true);
-    expect(Array.isArray(listRes.body.conversations)).toBe(true);
+    expect(listResponse.statusCode).toBe(200);
+    expect(listResponse.body.ok).toBe(true);
+    expect(listResponse.body.conversations).toHaveLength(1);
 
-    const messagesRes = await request(app)
+    const messagesResponse = await request(app)
       .get(`/api/conversations/${conversationId}/messages`)
-      .set('Authorization', `Bearer ${firstUser.token}`);
+      .set('Authorization', `Bearer ${alice.token}`);
 
-    expect(messagesRes.statusCode).toBe(200);
-    expect(messagesRes.body.ok).toBe(true);
-    expect(Array.isArray(messagesRes.body.messages)).toBe(true);
-  }, 20000);
+    expect(messagesResponse.statusCode).toBe(200);
+    expect(messagesResponse.body.ok).toBe(true);
+    expect(Array.isArray(messagesResponse.body.messages)).toBe(true);
+  });
+
+  test('AI conversation starts with an assistant greeting', async () => {
+    const carol = await TestHelpers.signupUser('carol@example.com', 'password123', 'Carol');
+
+    const createResponse = await request(app)
+      .post('/api/conversations')
+      .set('Authorization', `Bearer ${carol.token}`)
+      .send({ type: 'ai', title: 'AI Assistant', withAi: true });
+
+    expect(createResponse.statusCode).toBe(200);
+
+    const conversationId = createResponse.body.conversation.id;
+
+    const messagesResponse = await request(app)
+      .get(`/api/conversations/${conversationId}/messages`)
+      .set('Authorization', `Bearer ${carol.token}`);
+
+    expect(messagesResponse.body.messages).toHaveLength(1);
+    expect(messagesResponse.body.messages[0].senderRole).toBe('assistant');
+  });
+
+  test('non-participant cannot read messages', async () => {
+    const owner = await TestHelpers.signupUser('owner@example.com', 'password123', 'Owner');
+    const stranger = await TestHelpers.signupUser('stranger@example.com', 'password123', 'Stranger');
+
+    const createResponse = await request(app)
+      .post('/api/conversations')
+      .set('Authorization', `Bearer ${owner.token}`)
+      .send({ title: 'Private' });
+
+    const conversationId = createResponse.body.conversation.id;
+
+    const messagesResponse = await request(app)
+      .get(`/api/conversations/${conversationId}/messages`)
+      .set('Authorization', `Bearer ${stranger.token}`);
+
+    expect(messagesResponse.statusCode).toBe(403);
+  });
+
+  test('request without token is rejected', async () => {
+    const response = await request(app).get('/api/conversations');
+
+    expect(response.statusCode).toBe(401);
+  });
 });

@@ -1,0 +1,26 @@
+import ApiClient from './ApiClient';
+
+class ConversationApi {
+  static async getAll(token) {
+    const data = await ApiClient.get('/api/conversations', token);
+    return data.conversations || [];
+  }
+
+  static async getMessages(conversationId, token) {
+    const data = await ApiClient.get(`/api/conversations/${conversationId}/messages`, token);
+    return data.messages || [];
+  }
+
+  static async createAiConversation(token) {
+    const body = {
+      type: 'ai',
+      title: 'AI Assistant',
+      withAi: true,
+    };
+
+    const data = await ApiClient.post('/api/conversations', body, token);
+    return data.conversation;
+  }
+}
+
+export default ConversationApi;

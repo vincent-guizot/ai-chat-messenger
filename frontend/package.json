@@ -1,27 +1,27 @@
 {
   "name": "ai-chat-messenger-frontend",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
-  "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "@tanstack/react-query": "^5.0.0",
-    "zustand": "^4.4.0",
-    "zod": "^4.23.0",
-    "react-hook-form": "^7.45.0",
-    "@hookform/resolvers": "^3.0.0",
-    "socket.io-client": "^4.6.1"
-  },
-  "devDependencies": {
-    "vite": "^5.1.0",
-    "autoprefixer": "^10.4.14",
-    "postcss": "^8.4.24",
-    "tailwindcss": "^3.4.8"
-  },
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --port 5174",
-    "build:css": "postcss src/styles.css -o src/styles.generated.css"
+    "preview": "vite preview --port 5174"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.62.0",
+    "socket.io-client": "^4.8.1",
+    "zod": "^4.1.0",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "vite": "^5.4.21"
   }
 }

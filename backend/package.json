@@ -1,33 +1,48 @@
 {
   "name": "ai-chat-messenger-backend",
-  "version": "0.5.0",
-  "description": "Backend for AI Chat Messenger (Prisma)",
-  "main": "index.js",
+  "version": "1.0.0",
+  "description": "Backend for AI Chat Messenger (Express + Socket.IO + Prisma + PostgreSQL)",
+  "main": "src/server.js",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "db:create": "node prisma/create-db.js",
+    "prestart": "npm run db:prepare",
+    "start": "node src/server.js",
+    "predev": "npm run db:prepare",
+    "dev": "nodemon src/server.js",
+    "db:create": "node scripts/create-database.js",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:migrate:status": "prisma migrate status",
+    "db:seed": "prisma db seed",
+    "db:prepare": "npm run db:create && npm run db:migrate",
+    "db:setup": "npm run db:prepare && npm run db:seed",
+    "db:reset": "prisma migrate reset --force",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev --name init",
-    "prisma:seed": "node prisma/seed.js",
+    "postinstall": "prisma generate",
     "test": "jest --runInBand"
   },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "dependencies": {
-    "@prisma/client": "^5.12.0",
-    "axios": "^1.5.0",
-    "bcrypt": "^5.1.0",
+    "@prisma/client": "^5.22.0",
+    "axios": "^1.7.9",
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.1.4",
-    "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.0",
-    "socket.io": "^4.6.1",
-    "pg": "^8.11.0"
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.1",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1",
-    "prisma": "^5.12.0",
-    "jest": "^29.6.1",
-    "supertest": "^6.4.3",
-    "socket.io-client": "^4.8.1"
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.9",
+    "prisma": "^5.22.0",
+    "socket.io-client": "^4.8.1",
+    "supertest": "^7.0.0"
   }
 }

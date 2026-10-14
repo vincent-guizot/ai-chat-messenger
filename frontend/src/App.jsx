@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import socket from './socket'
 
 export default function App() {
   const [messages, setMessages] = useState([
@@ -7,7 +8,26 @@ export default function App() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function send() {
+  useEffect(() => {
+    socket.on('connect', () => {
+      console.log('connected to socket', socket.id)
+    })
+
+    socket.on('chat:response', (data) => {
+      setLoading(false)
+      if (data.ok) {
+        setMessages(m => [...m, { role: 'assistant', content: data.output }])
+      } else {
+        setMessages(m => [...m, { role: 'assistant', content: 'Error: ' + (data.error || 'unknown') }])
+      }
+    })
+
+    return () => {
+      socket.off('chat:response')
+    }
+  }, [])
+
+  function send() {
     if (!input.trim()) return
     const userMsg = { role: 'user', content: input }
     const newMessages = [...messages, userMsg]
@@ -15,23 +35,7 @@ export default function App() {
     setInput('')
     setLoading(true)
 
-    try {
-      const resp = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages })
-      })
-      const data = await resp.json()
-      if (data.ok) {
-        setMessages(m => [...m, { role: 'assistant', content: data.output }])
-      } else {
-        setMessages(m => [...m, { role: 'assistant', content: 'Error: ' + (data.error || 'unknown') }])
-      }
-    } catch (err) {
-      setMessages(m => [...m, { role: 'assistant', content: 'Network error: ' + err.message }])
-    } finally {
-      setLoading(false)
-    }
+    socket.emit('chat:message', { messages: newMessages })
   }
 
   return (

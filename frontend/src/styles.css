@@ -219,13 +219,29 @@ button, input {
   width: min(100%, 460px);
   border-radius: 28px;
   padding: 28px 26px;
+  position: relative;
+  overflow: hidden;
 }
 
 .auth-bg-orb {
   position: absolute;
+  width: 240px;
+  height: 240px;
   border-radius: 50%;
   filter: blur(70px);
   opacity: 0.5;
+}
+
+.orb-a {
+  top: -60px;
+  right: -30px;
+  background: rgba(168, 85, 247, 0.35);
+}
+
+.orb-b {
+  left: -40px;
+  bottom: -50px;
+  background: rgba(34, 211, 238, 0.25);
 }
 
 .form-group {

@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuthStore } from '../stores/auth';
 
+const apiBase = import.meta.env.VITE_API_BASE || '';
+
 const schema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
@@ -17,13 +19,9 @@ export default function Login() {
 
   async function onSubmit(data) {
     try {
-      const url = mode === 'login' ? '/api/auth/login' : '/api/auth/signup';
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      const json = await resp.json();
+      const url = mode === 'login' ? `${apiBase}/api/auth/login` : `${apiBase}/api/auth/signup`;
+      const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      const json = await response.json();
       if (json.ok) {
         setAuth(json.token, json.user);
         reset();
@@ -37,14 +35,14 @@ export default function Login() {
 
   return (
     <div className="auth-page">
-      <div className="auth-card" style={{ position: 'relative', overflow: 'hidden' }}>
-        <div className="auth-bg-orb" style={{ width: 200, height: 200, background: 'rgba(168,85,247,.24)', top: -60, right: -40 }} />
-        <div className="auth-bg-orb" style={{ width: 200, height: 200, background: 'rgba(34,211,238,.18)', left: -40, bottom: -50 }} />
+      <div className="auth-card">
+        <div className="auth-bg-orb orb-a" />
+        <div className="auth-bg-orb orb-b" />
 
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ marginBottom: 18 }}>
             <div className="brand-small">Welcome back</div>
-            <h2 className="brand" style={{ fontSize: '2rem', marginTop: 6, marginBottom: 0 }}>AI Chat Messenger</h2>
+            <h2 className="brand" style={{ fontSize: '2rem', marginTop: 6 }}>AI Chat Messenger</h2>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)}>
@@ -65,19 +63,12 @@ export default function Login() {
               </div>
             )}
 
-            <div className="helper-row" style={{ marginBottom: 12 }}>
-              <button type="submit" className="btn" style={{ flex: 1 }}>
-                {mode === 'login' ? 'Login' : 'Create account'}
-              </button>
+            <div className="helper-row">
+              <button type="submit" className="btn" style={{ flex: 1 }}>{mode === 'login' ? 'Login' : 'Create account'}</button>
             </div>
 
             <div className="helper-row">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-                style={{ width: '100%' }}
-              >
+              <button type="button" className="btn btn-secondary" onClick={() => setMode(mode === 'login' ? 'signup' : 'login')} style={{ width: '100%' }}>
                 {mode === 'login' ? 'Need an account?' : 'Already have an account?'}
               </button>
             </div>

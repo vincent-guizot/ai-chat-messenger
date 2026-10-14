@@ -4,7 +4,6 @@ const jwt = require('jsonwebtoken');
 const prisma = require('../prisma');
 const router = express.Router();
 
-// POST /api/auth/signup
 router.post('/signup', async (req, res) => {
   try {
     const { email, password, name } = req.body;
@@ -14,7 +13,9 @@ router.post('/signup', async (req, res) => {
     if (existing) return res.status(400).json({ error: 'email already in use' });
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({ data: { email, passwordHash, name } });
+    const user = await prisma.user.create({
+      data: { email, passwordHash, name: name || email.split('@')[0] },
+    });
 
     const token = jwt.sign({ sub: user.id, email: user.email }, process.env.JWT_SECRET || 'replace_this', { expiresIn: '7d' });
     res.json({ ok: true, token, user: { id: user.id, email: user.email, name: user.name } });
@@ -24,7 +25,6 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-// POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;

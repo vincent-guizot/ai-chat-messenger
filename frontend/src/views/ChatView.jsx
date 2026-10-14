@@ -3,13 +3,16 @@ import { useAuthStore } from '../stores/auth';
 import socket from '../socket';
 import Message from '../components/Message';
 import Header from '../components/Header';
+import SearchBar from '../components/SearchBar';
 
 const apiBase = import.meta.env.VITE_API_BASE || '';
 
 export default function ChatView() {
   const { user, token, clearAuth } = useAuthStore();
   const [conversations, setConversations] = useState([]);
+  const [filteredConversations, setFilteredConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
+  const [messagesAll, setMessagesAll] = useState([]);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loadingConvos, setLoadingConvos] = useState(false);
@@ -18,6 +21,8 @@ export default function ChatView() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [toast, setToast] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const [convoSearch, setConvoSearch] = useState('');
+  const [messageSearch, setMessageSearch] = useState('');
   const messagesRef = useRef(null);
 
   const initials = useMemo(() => {
@@ -35,7 +40,6 @@ export default function ChatView() {
 
     socket.on('connect', () => {
       setConnectionStatus('connected');
-      console.log('connected to socket', socket.id);
     });
 
     socket.on('disconnect', () => {
@@ -47,9 +51,18 @@ export default function ChatView() {
     });
 
     socket.on('message:new', (msg) => {
-      setMessages((current) => {
-        const exists = current.some((m) => m.id === msg.id);
-        return exists ? current : [...current, msg];
+      setMessagesAll((cur) => {
+        const exists = cur.some((m) => m.id === msg.id);
+        if (exists) return cur;
+        return [...cur, msg];
+      });
+
+      // apply message search filter
+      setMessages((cur) => {
+        const merged = [...messagesAll, msg];
+        const q = messageSearch.trim().toLowerCase();
+        if (!q) return merged;
+        return merged.filter((m) => m.content.toLowerCase().includes(q));
       });
 
       if (msg.senderRole === 'assistant') {
@@ -61,12 +74,34 @@ export default function ChatView() {
       socket.off('message:new');
       socket.disconnect();
     };
-  }, [token]);
+  }, [token, messageSearch]);
 
   useEffect(() => {
     if (!token) return;
     loadConversations();
   }, [token]);
+
+  useEffect(() => {
+    // filter conversations by search
+    if (!convoSearch.trim()) {
+      setFilteredConversations(conversations);
+      return;
+    }
+    const q = convoSearch.trim().toLowerCase();
+    setFilteredConversations(
+      conversations.filter((c) => (c.title || '').toLowerCase().includes(q) || (c.participants || []).some((p) => (p.user?.name || '').toLowerCase().includes(q)))
+    );
+  }, [convoSearch, conversations]);
+
+  useEffect(() => {
+    // apply message search on existing messagesAll
+    if (!messageSearch.trim()) {
+      setMessages(messagesAll);
+      return;
+    }
+    const q = messageSearch.trim().toLowerCase();
+    setMessages(messagesAll.filter((m) => m.content.toLowerCase().includes(q)));
+  }, [messageSearch, messagesAll]);
 
   useEffect(() => {
     if (messagesRef.current) {
@@ -81,13 +116,15 @@ export default function ChatView() {
       const data = await response.json();
       if (!data.ok) throw new Error(data.error || 'Failed to load conversations');
 
+      setConversations(data.conversations || []);
+      setFilteredConversations(data.conversations || []);
+
       if (data.conversations?.length) {
-        setConversations(data.conversations);
         setActiveConversation(data.conversations[0]);
         await loadMessages(data.conversations[0].id);
       } else {
-        setConversations([]);
         setActiveConversation(null);
+        setMessagesAll([]);
         setMessages([]);
       }
     } catch (err) {
@@ -104,10 +141,12 @@ export default function ChatView() {
       const data = await response.json();
       if (!data.ok) throw new Error(data.error || 'Failed to load messages');
 
+      setMessagesAll(data.messages || []);
       setMessages(data.messages || []);
       socket.emit('join', { conversationId });
     } catch (err) {
       showToast(err.message || 'Failed to load messages');
+      setMessagesAll([]);
       setMessages([]);
     } finally {
       setLoadingMessages(false);
@@ -155,6 +194,7 @@ export default function ChatView() {
       createdAt: new Date().toISOString(),
     };
 
+    setMessagesAll((cur) => [...cur, optimistic]);
     setMessages((cur) => [...cur, optimistic]);
     socket.emit('message:create', { conversationId: activeConversation.id, content: input.trim() });
     setInput('');
@@ -167,15 +207,17 @@ export default function ChatView() {
       <aside className="sidebar">
         <Header userInitials={initials} onLogout={clearAuth} connectionStatus={connectionStatus} />
 
-        <div style={{ padding: '12px 0' }}>
-          <button className="btn" onClick={createAiConversation} style={{ marginBottom: 12 }} disabled={loadingConvos}>+ AI Chat</button>
+        <div className="p-2">
+          <SearchBar value={convoSearch} onChange={setConvoSearch} placeholder="Search conversations or contacts..." />
+
+          <button className="btn w-full" onClick={createAiConversation} style={{ marginBottom: 12 }} disabled={loadingConvos}>+ AI Chat</button>
 
           {loadingConvos && <div className="muted">Loading conversations...</div>}
 
-          {!loadingConvos && conversations.length === 0 && <div className="muted">No chats yet</div>}
+          {!loadingConvos && filteredConversations.length === 0 && <div className="muted">No chats found</div>}
 
           <div className="conversation-list">
-            {conversations.map((conversation) => (
+            {filteredConversations.map((conversation) => (
               <div key={conversation.id} className={`conversation-item ${activeConversation?.id === conversation.id ? 'active' : ''}`} onClick={() => openConversation(conversation)}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div className="avatar">{(conversation.title || 'AI').slice(0, 2).toUpperCase()}</div>
@@ -203,6 +245,7 @@ export default function ChatView() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <input value={messageSearch} onChange={(e) => setMessageSearch(e.target.value)} placeholder="Search messages..." className="input" style={{ width: 260 }} />
                 <div className="muted">{connectionStatus === 'connected' ? 'Online' : connectionStatus === 'connecting' ? 'Connecting...' : 'Offline'}</div>
                 <div className="avatar" title={user?.name || 'You'}>{initials}</div>
               </div>

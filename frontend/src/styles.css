@@ -2,12 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-/* small custom tweaks retained from previous styles.css */
-body { font-family: system-ui, Arial; padding: 1rem; }
-.container { max-width: 800px; margin: 0 auto }
-.chat-window { border: 1px solid #ddd; padding: 1rem; height: 60vh; overflow: auto; background: #fafafa }
-.msg { margin-bottom: 1rem }
-.msg.user { text-align: right }
-.msg.assistant { text-align: left }
-.composer { display: flex; gap: 0.5rem; margin-top: 0.5rem }
-.composer input { flex: 1; padding: 0.5rem }
+:root{
+  --bg-gradient: linear-gradient(135deg,#0f172a 0%,#0b1220 100%);
+  --card-gradient: linear-gradient(135deg,#111827 0%,#0f172a 100%);
+}
+
+body { @apply bg-slate-900 text-slate-100; background: var(--bg-gradient); min-height: 100vh; }
+
+.app-shell { max-width: 1200px; margin: 2rem auto; padding: 1rem; display: grid; grid-template-columns: 320px 1fr; gap: 1rem; }
+.sidebar { background: rgba(255,255,255,0.03); border-radius: .75rem; padding: 1rem; backdrop-filter: blur(6px); }
+.header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 1rem }
+.brand { font-weight:700; font-size:1.25rem; background: linear-gradient(90deg,#A78BFA,#34D399); -webkit-background-clip:text; background-clip:text; color: transparent }
+.conversation-list { display:flex; flex-direction:column; gap: .5rem }
+.conversation-item { padding:.5rem; border-radius:.5rem; cursor:pointer; transition: all .12s; }
+.conversation-item:hover { background: rgba(255,255,255,0.02); transform: translateY(-2px) }
+.chat-panel { background: rgba(255,255,255,0.02); padding: 1rem; border-radius: .75rem; display:flex; flex-direction:column; height: 80vh }
+.messages { flex:1; overflow:auto; padding: .5rem; display:flex; flex-direction:column; gap:.75rem }
+.msg { max-width: 75%; padding:.6rem .8rem; border-radius: .75rem; }
+.msg.user { align-self:flex-end; background: linear-gradient(90deg,#06B6D4,#3B82F6); color: white }
+.msg.assistant { align-self:flex-start; background: rgba(255,255,255,0.03); color: #e6eef8 }
+.composer { display:flex; gap:.5rem; margin-top: .5rem }
+.input { flex:1; padding:.6rem .8rem; border-radius:.5rem; background: rgba(255,255,255,0.03); color:inherit; border: 1px solid rgba(255,255,255,0.04) }
+.btn { padding: .55rem .9rem; border-radius:.6rem; background: linear-gradient(90deg,#7C3AED,#06B6D4); color:white; font-weight:600 }

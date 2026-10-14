@@ -1,23 +1,24 @@
-# Backend README
+/**
+ * README additions for Postgres + Prisma
+ */
 
-This backend provides a small Express API to proxy chat requests to an AI provider.
+# Postgres + Prisma setup
 
-Providers supported:
-- Hugging Face Inference API (hosted, free tier available)
-- Ollama (local server) — recommended if you want large context and free usage (runs locally)
+1. Install Postgres locally or via Docker and create database `ai_chat`.
+2. Copy `.env.example` to `.env` and set DATABASE_URL and JWT_SECRET.
+3. Generate Prisma client & run migration:
 
-Environment
-- Copy backend/.env.example to backend/.env and set values.
-  - HUGGINGFACE_API_TOKEN: your HF token (if using Hugging Face)
-  - DEFAULT_PROVIDER: 'huggingface' or 'ollama'
-  - DEFAULT_HF_MODEL: model id on HF (eg. 'gpt2', 'bigscience/bloom', 'TheBloke/wizardLM')
-  - OLLAMA_URL: e.g. http://localhost:11434
+   cd backend
+   npm install
+   npx prisma generate
+   npx prisma migrate dev --name init
 
-Endpoints
-- POST /api/chat
-  - body: { messages: [{role:'user'|'assistant', content: string}], provider?: 'huggingface'|'ollama', model?: string, max_new_tokens?: number }
+4. Start backend:
+   npm run dev
 
-Notes on "gratisan dan banyak token":
-- Hugging Face: has a free tier for inference; tokens/limits vary by model and rate limits — good for quick hosted testing.
-- Ollama (local): run models locally (e.g., llama.cpp/ggml builds or models from Hugging Face). Token limits depend on the model and your machine — this is the best way to get large context without per-token billing, but requires local resources.
+Notes:
+- This project uses Prisma with Postgres for production-ready data storage.
+- For development you can run Postgres in Docker:
+
+  docker run --name ai_chat_postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=ai_chat -p 5432:5432 -d postgres:15
 

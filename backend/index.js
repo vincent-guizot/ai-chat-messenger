@@ -1,9 +1,11 @@
 const express = require('express');
 const cors = require('cors');
-const axios = require('axios');
-require('dotenv').config();
 const http = require('http');
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
+const prisma = require('./prisma');
+const authRouter = require('./routes/auth');
 const { generateWithHuggingFace, generateWithOllama } = require('./ai/providers');
 
 const app = express();
@@ -12,57 +14,96 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-app.post('/api/chat', async (req, res) => {
-  try {
-    const { messages, provider, model, max_new_tokens } = req.body;
+app.use('/api/auth', authRouter);
 
-    const prompt = messages.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n') + '\nAssistant:';
-
-    const chosenProvider = provider || process.env.DEFAULT_PROVIDER || 'huggingface';
-    const chosenModel = model || process.env.DEFAULT_HF_MODEL || 'gpt2';
-
-    let result;
-    if (chosenProvider === 'ollama') {
-      result = await generateWithOllama(prompt, { model: chosenModel, max_new_tokens });
-    } else {
-      result = await generateWithHuggingFace(prompt, { model: chosenModel, max_new_tokens });
-    }
-
-    res.json({ ok: true, provider: chosenProvider, model: chosenModel, output: result });
-  } catch (err) {
-    console.error(err?.response?.data || err.message || err);
-    res.status(500).json({ ok: false, error: err?.response?.data || err.message || 'internal error' });
-  }
-});
+// Basic REST endpoints for conversations/messages (protected via middleware in routes if needed)
+app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 // Create HTTP server and attach socket.io for real-time chat
 const httpServer = http.createServer(app);
-const io = new Server(httpServer, {
-  cors: { origin: '*' }
+const io = new Server(httpServer, { cors: { origin: '*' } });
+
+// Simple socket auth helper
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) return next();
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET || 'replace_this');
+    socket.user = { id: payload.sub, email: payload.email };
+  } catch (err) {
+    console.log('socket auth failed', err.message);
+  }
+  next();
 });
 
 io.on('connection', (socket) => {
-  console.log('socket connected', socket.id);
+  console.log('socket connected', socket.id, socket.user?.id);
 
-  socket.on('chat:message', async (payload) => {
-    // payload: { messages: [{role, content}], provider?, model?, max_new_tokens? }
+  socket.on('join', async ({ conversationId }) => {
+    if (!conversationId) return;
+    socket.join(conversationId);
+    // Optional: emit presence
+  });
+
+  socket.on('leave', ({ conversationId }) => {
+    if (!conversationId) return;
+    socket.leave(conversationId);
+  });
+
+  socket.on('message:create', async (payload) => {
+    // payload: { conversationId, content }
     try {
-      const { messages, provider, model, max_new_tokens } = payload;
-      const prompt = messages.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n') + '\nAssistant:';
-      const chosenProvider = provider || process.env.DEFAULT_PROVIDER || 'huggingface';
-      const chosenModel = model || process.env.DEFAULT_HF_MODEL || 'gpt2';
-
-      let output;
-      if (chosenProvider === 'ollama') {
-        output = await generateWithOllama(prompt, { model: chosenModel, max_new_tokens });
-      } else {
-        output = await generateWithHuggingFace(prompt, { model: chosenModel, max_new_tokens });
+      const userId = socket.user?.id || null;
+      if (!userId) {
+        socket.emit('error', { message: 'unauthenticated' });
+        return;
       }
 
-      socket.emit('chat:response', { ok: true, provider: chosenProvider, model: chosenModel, output });
+      const { conversationId, content } = payload;
+      if (!conversationId || !content) return;
+
+      const message = await prisma.message.create({ data: {
+        conversationId,
+        senderId: userId,
+        senderRole: 'user',
+        content,
+      }});
+
+      // Emit to room
+      io.to(conversationId).emit('message:new', message);
+
+      // If conversation has a bot participant, generate AI response
+      const participants = await prisma.participant.findMany({ where: { conversationId } });
+      const hasBot = participants.some(p => p.role === 'bot');
+      if (hasBot) {
+        // build a simple prompt using last 10 messages
+        const lastMessages = await prisma.message.findMany({ where: { conversationId }, orderBy: { createdAt: 'desc' }, take: 10 });
+        const prompt = lastMessages.reverse().map(m => `${m.senderRole === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n') + '\nAssistant:';
+
+        const chosenProvider = process.env.DEFAULT_PROVIDER || 'huggingface';
+        const chosenModel = process.env.DEFAULT_HF_MODEL || 'gpt2';
+        let aiOutput = '';
+        try {
+          if (chosenProvider === 'ollama') aiOutput = await generateWithOllama(prompt, { model: chosenModel, max_new_tokens: 512 });
+          else aiOutput = await generateWithHuggingFace(prompt, { model: chosenModel, max_new_tokens: 512 });
+        } catch (err) {
+          aiOutput = 'AI error: ' + (err.message || 'generation failed');
+        }
+
+        const aiMessage = await prisma.message.create({ data: {
+          conversationId,
+          senderId: null,
+          senderRole: 'assistant',
+          content: aiOutput,
+          metadata: { provider: chosenProvider, model: chosenModel }
+        }});
+
+        io.to(conversationId).emit('message:new', aiMessage);
+      }
+
     } catch (err) {
-      console.error('chat error', err?.response?.data || err.message || err);
-      socket.emit('chat:response', { ok: false, error: err?.response?.data || err.message || 'internal error' });
+      console.error('message:create error', err.message || err);
+      socket.emit('error', { message: err.message || 'server error' });
     }
   });
 
@@ -72,5 +113,5 @@ io.on('connection', (socket) => {
 });
 
 httpServer.listen(PORT, () => {
-  console.log(`AI Chat Messenger backend (with sockets) listening on http://localhost:${PORT}`);
+  console.log(`AI Chat Messenger backend (with sockets & prisma) listening on http://localhost:${PORT}`);
 });

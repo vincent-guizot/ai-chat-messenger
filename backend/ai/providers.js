@@ -11,7 +11,6 @@ async function generateWithHuggingFace(prompt, options = {}) {
     inputs: prompt,
     parameters: {
       max_new_tokens: options.max_new_tokens || 512,
-      // you can add temperature, top_k, top_p, etc.
     },
     options: { wait_for_model: true }
   };
@@ -21,7 +20,6 @@ async function generateWithHuggingFace(prompt, options = {}) {
     timeout: 120000
   });
 
-  // HF text-generation returns array or object depending on model; handle common cases
   if (Array.isArray(resp.data) && resp.data[0]?.generated_text) return resp.data[0].generated_text;
   if (resp.data.generated_text) return resp.data.generated_text;
   if (typeof resp.data === 'string') return resp.data;
@@ -29,7 +27,6 @@ async function generateWithHuggingFace(prompt, options = {}) {
 }
 
 async function generateWithOllama(prompt, options = {}) {
-  // Ollama local server must be running: http://localhost:11434
   const url = `${process.env.OLLAMA_URL || 'http://localhost:11434'}/api/generate`;
   const payload = {
     model: options.model || 'llama2',
@@ -38,7 +35,6 @@ async function generateWithOllama(prompt, options = {}) {
   };
 
   const resp = await axios.post(url, payload, { timeout: 120000 });
-  // Ollama returns { results: [ { content: '...' } ] }
   if (resp.data?.results?.[0]?.content) return resp.data.results[0].content;
   return JSON.stringify(resp.data);
 }

@@ -1,41 +1,27 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../stores/authStore';
-import useChat from '../hooks/useChat';
-import { getInitials } from '../utils/formatters';
-import SidebarHeader from '../components/chat/SidebarHeader';
-import ConversationList from '../components/chat/ConversationList';
+import { toTypingInfo, useChatStore } from '../stores/chatStore';
+import { SIDEBAR_TABS, useUiStore } from '../stores/uiStore';
+import useChatSocket from '../hooks/useChatSocket';
+import useSendMessage from '../hooks/useSendMessage';
+import { useAutoReadActiveConversation } from '../hooks/useNotifications';
+import {
+  useActiveConversation,
+  useContactsById,
+  useConversationsQuery,
+  useCreateAiConversation,
+  useMessagesQuery,
+} from '../hooks/useChatData';
+import { findOtherUser, getConversationTitle, isAssistantConversation } from '../utils/conversations';
+import Sidebar from '../components/sidebar/Sidebar';
 import ChatHeader from '../components/chat/ChatHeader';
 import MessageList from '../components/chat/MessageList';
 import MessageInput from '../components/chat/MessageInput';
-import SearchBar from '../components/common/SearchBar';
-import Toast from '../components/common/Toast';
+import WelcomeScreen from '../components/chat/WelcomeScreen';
+import Toast from '../components/ui/Toast';
 
-function filterConversations(conversations, searchText) {
-  const query = searchText.trim().toLowerCase();
-
-  if (query === '') {
-    return conversations;
-  }
-
-  return conversations.filter((conversation) => {
-    const title = (conversation.title || '').toLowerCase();
-
-    if (title.includes(query)) {
-      return true;
-    }
-
-    const participants = conversation.participants || [];
-
-    return participants.some((participant) => {
-      let participantName = '';
-      if (participant.user && participant.user.name) {
-        participantName = participant.user.name.toLowerCase();
-      }
-
-      return participantName.includes(query);
-    });
-  });
-}
+const EMPTY_LIST = [];
 
 function filterMessages(messages, searchText) {
   const query = searchText.trim().toLowerCase();
@@ -50,101 +36,184 @@ function filterMessages(messages, searchText) {
   });
 }
 
-export default function ChatPage() {
-  const token = useAuthStore((state) => state.token);
-  const user = useAuthStore((state) => state.user);
-  const clearAuth = useAuthStore((state) => state.clearAuth);
-
-  const chat = useChat(token, user);
-
-  const [conversationSearch, setConversationSearch] = useState('');
-  const [messageSearch, setMessageSearch] = useState('');
-
-  let userId = null;
-  let userFullName = null;
-  if (user) {
-    userId = user.id;
-    userFullName = user.name;
+/**
+ * Pesan status koneksi di atas kotak input.
+ * tone "warning" (kuning) saat menghubungkan, "danger" (merah) saat terputus.
+ */
+function getConnectionNotice(connectionStatus) {
+  if (connectionStatus === 'connecting') {
+    return { text: 'Connecting to the server...', tone: 'warning' };
   }
 
-  const userName = userFullName || 'You';
-  const userInitials = getInitials(userFullName, 'AI');
+  if (connectionStatus === 'disconnected' || connectionStatus === 'error') {
+    return { text: 'You are offline. Reconnecting...', tone: 'danger' };
+  }
 
-  const visibleConversations = useMemo(() => {
-    return filterConversations(chat.conversations, conversationSearch);
-  }, [chat.conversations, conversationSearch]);
+  return null;
+}
 
-  const visibleMessages = useMemo(() => {
-    return filterMessages(chat.messages, messageSearch);
-  }, [chat.messages, messageSearch]);
+/**
+ * Pintasan keyboard Alt + N untuk membuat chat AI baru.
+ * (Ctrl + N tidak bisa dipakai karena sudah dipakai browser untuk membuka jendela baru.)
+ */
+function useNewChatShortcut(onNewChat) {
+  useEffect(() => {
+    function handleKeyDown(event) {
+      const isAltN = event.altKey && !event.ctrlKey && !event.metaKey && event.code === 'KeyN';
 
-  const isInputDisabled = chat.connectionStatus !== 'connected';
+      if (isAltN) {
+        event.preventDefault();
+        onNewChat();
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onNewChat]);
+}
+
+export default function ChatPage() {
+  useChatSocket();
+  useAutoReadActiveConversation();
+
+  const queryClient = useQueryClient();
+  const user = useAuthStore((state) => state.user);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+  const activeConversationId = useChatStore((state) => state.activeConversationId);
+  const setActiveConversationId = useChatStore((state) => state.setActiveConversationId);
+  const connectionStatus = useChatStore((state) => state.connectionStatus);
+  const resetChatStore = useChatStore((state) => state.reset);
+  const setActiveTab = useUiStore((state) => state.setActiveTab);
+  const setMobileSidebarOpen = useUiStore((state) => state.setMobileSidebarOpen);
+  const typing = useChatStore((state) => state.typingByConversation[activeConversationId]);
+
+  const conversationsQuery = useConversationsQuery();
+  const conversations = conversationsQuery.data || EMPTY_LIST;
+  const activeConversation = useActiveConversation();
+  const contactsById = useContactsById();
+  const messagesQuery = useMessagesQuery(activeConversationId);
+  const createAiConversation = useCreateAiConversation();
+  const messageSender = useSendMessage(activeConversationId);
+
+  const [searchText, setSearchText] = useState('');
+
+  let currentUserId = null;
+  if (user) {
+    currentUserId = user.id;
+  }
+
+  // Saat pertama dibuka, langsung pilih percakapan teratas.
+  useEffect(() => {
+    if (!activeConversationId && conversations.length > 0) {
+      setActiveConversationId(conversations[0].id);
+
+      if (!isAssistantConversation(conversations[0])) {
+        setActiveTab(SIDEBAR_TABS.direct);
+      }
+    }
+  }, [activeConversationId, conversations, setActiveConversationId, setActiveTab]);
+
+  // Kosongkan pencarian setiap pindah percakapan.
+  useEffect(() => {
+    setSearchText('');
+  }, [activeConversationId]);
+
+  function startNewAiChat() {
+    if (!createAiConversation.isPending) {
+      createAiConversation.mutate();
+    }
+  }
+
+  useNewChatShortcut(startNewAiChat);
+
+  function showContacts() {
+    setActiveTab(SIDEBAR_TABS.contacts);
+    setMobileSidebarOpen(true);
+  }
+
+  function handleLogout() {
+    clearAuth();
+    resetChatStore();
+    queryClient.clear();
+  }
+
+  const messages = messagesQuery.data || EMPTY_LIST;
+  const visibleMessages = useMemo(() => filterMessages(messages, searchText), [messages, searchText]);
+
+  const isAssistant = isAssistantConversation(activeConversation);
+  const otherUser = findOtherUser(activeConversation, currentUserId, contactsById);
+  const typingInfo = toTypingInfo(typing);
+
+  let title = '';
+  let inputPlaceholder = 'Write a message...';
+
+  if (activeConversation) {
+    title = getConversationTitle(activeConversation, otherUser);
+    inputPlaceholder = `Message ${title}...`;
+  }
+
+  let isOtherSideTyping = typingInfo.userIds.length > 0;
+  if (isAssistant) {
+    isOtherSideTyping = typingInfo.assistant;
+  }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="mx-auto grid min-h-screen max-w-7xl gap-4 p-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <aside className="rounded-3xl border border-slate-700/60 bg-slate-900/75 p-4 shadow-2xl backdrop-blur-xl">
-          <SidebarHeader
-            userInitials={userInitials}
-            onLogout={clearAuth}
-            connectionStatus={chat.connectionStatus}
+    <div className="flex h-full overflow-hidden">
+      <Sidebar onLogout={handleLogout} />
+
+      <main className="flex min-w-0 flex-1 flex-col bg-slate-50 dark:bg-navy-950">
+        <ChatHeader
+          hasConversation={Boolean(activeConversation)}
+          title={title}
+          isAssistant={isAssistant}
+          otherUser={otherUser}
+          isTyping={isOtherSideTyping}
+          searchText={searchText}
+          onSearchChange={setSearchText}
+          onNewChat={startNewAiChat}
+          onLogout={handleLogout}
+        />
+
+        {!activeConversation && (
+          <WelcomeScreen
+            onStartAiChat={startNewAiChat}
+            onShowContacts={showContacts}
+            isCreating={createAiConversation.isPending}
           />
+        )}
 
-          <div className="space-y-3">
-            <SearchBar
-              value={conversationSearch}
-              onChange={setConversationSearch}
-              placeholder="Search conversations or contacts..."
-            />
-
-            <button
-              type="button"
-              className="w-full rounded-xl bg-gradient-to-r from-violet-500 via-indigo-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-60"
-              onClick={chat.createAiConversation}
-              disabled={chat.loadingConversations}
-            >
-              + AI Chat
-            </button>
-
-            <ConversationList
-              conversations={visibleConversations}
-              activeConversation={chat.activeConversation}
-              isLoading={chat.loadingConversations}
-              onSelect={chat.openConversation}
-            />
-          </div>
-        </aside>
-
-        <main className="rounded-3xl border border-slate-700/60 bg-slate-900/75 p-4 shadow-2xl backdrop-blur-xl">
-          {chat.activeConversation ? (
-            <>
-              <ChatHeader
-                conversation={chat.activeConversation}
-                connectionStatus={chat.connectionStatus}
-                messageSearch={messageSearch}
-                onMessageSearchChange={setMessageSearch}
-                userInitials={userInitials}
-                userName={userName}
-              />
-
+        {activeConversation && (
+          <>
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
               <MessageList
+                conversation={activeConversation}
                 messages={visibleMessages}
-                currentUserId={userId}
-                isLoading={chat.loadingMessages}
-                isAssistantTyping={chat.isAssistantTyping}
+                currentUserId={currentUserId}
+                isAssistant={isAssistant}
+                otherUser={otherUser}
+                typingInfo={typingInfo}
+                isLoading={messagesQuery.isLoading}
+                searchText={searchText}
+                onSuggestion={messageSender.sendMessage}
               />
-
-              <MessageInput onSend={chat.sendMessage} disabled={isInputDisabled} />
-            </>
-          ) : (
-            <div className="grid h-full place-items-center text-sm uppercase tracking-[0.18em] text-violet-300/80">
-              Select a conversation
             </div>
-          )}
 
-          <Toast message={chat.toastMessage} />
-        </main>
-      </div>
+            <MessageInput
+              conversationId={activeConversation.id}
+              placeholder={inputPlaceholder}
+              disabled={connectionStatus !== 'connected'}
+              connectionNotice={getConnectionNotice(connectionStatus)}
+              onSend={messageSender.sendMessage}
+              onTyping={messageSender.notifyTyping}
+            />
+          </>
+        )}
+      </main>
+
+      <Toast />
     </div>
   );
 }

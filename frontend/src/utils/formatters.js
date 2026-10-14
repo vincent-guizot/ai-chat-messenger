@@ -1,23 +1,30 @@
+const MINUTE_MS = 60 * 1000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+
 /**
  * "Budi Santoso" -> "BS", nama kosong -> fallback.
  */
 export function getInitials(name, fallback) {
-  if (!name) {
+  if (!name || name.trim() === '') {
     return fallback;
   }
 
-  const words = name.trim().split(' ').slice(0, 2);
+  const words = name.trim().split(/\s+/).slice(0, 2);
   const firstLetters = words.map((word) => word.charAt(0));
 
   return firstLetters.join('').toUpperCase();
 }
 
 /**
- * Dua huruf pertama dari judul percakapan, contoh "AI Assistant" -> "AI".
+ * "vincent@mail.com" -> "@vincent"
  */
-export function getConversationBadge(conversation) {
-  const title = conversation.title || 'AI';
-  return title.slice(0, 2).toUpperCase();
+export function getHandle(email) {
+  if (!email) {
+    return '';
+  }
+
+  return `@${email.split('@')[0]}`;
 }
 
 export function formatTime(dateValue) {
@@ -30,14 +37,90 @@ export function formatTime(dateValue) {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export function conversationHasAssistant(conversation) {
-  if (!conversation) {
-    return false;
+/**
+ * Teks status untuk user offline, contoh: "Last seen 10m ago".
+ */
+export function formatLastSeen(lastSeenAt) {
+  if (!lastSeenAt) {
+    return 'Offline';
   }
 
-  if (conversation.participants) {
-    return conversation.participants.some((participant) => participant.role === 'assistant');
+  const elapsedMs = Date.now() - new Date(lastSeenAt).getTime();
+
+  if (elapsedMs < MINUTE_MS) {
+    return 'Last seen just now';
   }
 
-  return conversation.type === 'ai';
+  if (elapsedMs < HOUR_MS) {
+    return `Last seen ${Math.floor(elapsedMs / MINUTE_MS)}m ago`;
+  }
+
+  if (elapsedMs < DAY_MS) {
+    return `Last seen ${Math.floor(elapsedMs / HOUR_MS)}h ago`;
+  }
+
+  return `Last seen ${Math.floor(elapsedMs / DAY_MS)}d ago`;
+}
+
+// Warna solid avatar: variasi biru & navy, ditambah beberapa warna aksen yang lembut.
+const AVATAR_COLORS = [
+  'bg-brand-600',
+  'bg-navy-600',
+  'bg-sky-600',
+  'bg-indigo-600',
+  'bg-emerald-600',
+  'bg-amber-600',
+  'bg-rose-600',
+];
+
+/**
+ * Warna avatar yang selalu sama untuk teks yang sama (mis. nama user).
+ */
+export function getAvatarColor(seedText) {
+  const text = seedText || '';
+  let total = 0;
+
+  for (let index = 0; index < text.length; index = index + 1) {
+    total = total + text.charCodeAt(index);
+  }
+
+  return AVATAR_COLORS[total % AVATAR_COLORS.length];
+}
+
+/**
+ * Waktu relatif singkat untuk notifikasi, contoh: "just now", "5m", "2h", "3d".
+ */
+export function formatRelativeTime(dateValue) {
+  const elapsedMs = Date.now() - new Date(dateValue).getTime();
+
+  if (elapsedMs < MINUTE_MS) {
+    return 'just now';
+  }
+
+  if (elapsedMs < HOUR_MS) {
+    return `${Math.floor(elapsedMs / MINUTE_MS)}m ago`;
+  }
+
+  if (elapsedMs < DAY_MS) {
+    return `${Math.floor(elapsedMs / HOUR_MS)}h ago`;
+  }
+
+  return `${Math.floor(elapsedMs / DAY_MS)}d ago`;
+}
+
+/**
+ * Memotong teks panjang untuk pratinjau pesan di sidebar.
+ */
+export function truncate(text, maxLength) {
+  if (!text) {
+    return '';
+  }
+
+  const singleLine = text.replace(/\s+/g, ' ').trim();
+
+  if (singleLine.length <= maxLength) {
+    return singleLine;
+  }
+
+  return `${singleLine.slice(0, maxLength - 1)}…`;
 }

@@ -7,36 +7,69 @@ const EMPTY_AUTH = {
   user: null,
 };
 
-function readSavedAuth() {
+/**
+ * "Remember me" aktif  -> disimpan di localStorage (tetap login setelah browser ditutup).
+ * "Remember me" mati   -> disimpan di sessionStorage (hilang saat tab ditutup).
+ */
+function getStorage(remember) {
+  if (remember) {
+    return window.localStorage;
+  }
+
+  return window.sessionStorage;
+}
+
+function readSavedAuthFrom(storage) {
   try {
-    const savedText = window.localStorage.getItem(STORAGE_KEY);
+    const savedText = storage.getItem(STORAGE_KEY);
 
     if (!savedText) {
-      return EMPTY_AUTH;
+      return null;
     }
 
     const saved = JSON.parse(savedText);
 
+    if (!saved.token) {
+      return null;
+    }
+
     return {
-      token: saved.token || null,
+      token: saved.token,
       user: saved.user || null,
     };
   } catch (error) {
-    return EMPTY_AUTH;
+    return null;
   }
 }
 
-function saveAuth(token, user) {
+function readSavedAuth() {
+  const rememberedAuth = readSavedAuthFrom(getStorage(true));
+
+  if (rememberedAuth) {
+    return rememberedAuth;
+  }
+
+  const sessionAuth = readSavedAuthFrom(getStorage(false));
+
+  if (sessionAuth) {
+    return sessionAuth;
+  }
+
+  return EMPTY_AUTH;
+}
+
+function saveAuth(token, user, remember) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ token: token, user: user }));
+    getStorage(remember).setItem(STORAGE_KEY, JSON.stringify({ token: token, user: user }));
   } catch (error) {
-    // localStorage bisa tidak tersedia (mis. mode private). Login tetap berjalan di memori.
+    // Storage bisa tidak tersedia (mis. mode private). Login tetap berjalan di memori.
   }
 }
 
 function removeSavedAuth() {
   try {
-    window.localStorage.removeItem(STORAGE_KEY);
+    getStorage(true).removeItem(STORAGE_KEY);
+    getStorage(false).removeItem(STORAGE_KEY);
   } catch (error) {
     // Abaikan, lihat catatan pada saveAuth.
   }
@@ -49,8 +82,9 @@ export const useAuthStore = create((set) => {
     token: savedAuth.token,
     user: savedAuth.user,
 
-    setAuth: (token, user) => {
-      saveAuth(token, user);
+    setAuth: (token, user, remember) => {
+      removeSavedAuth();
+      saveAuth(token, user, remember);
       set({ token: token, user: user });
     },
 

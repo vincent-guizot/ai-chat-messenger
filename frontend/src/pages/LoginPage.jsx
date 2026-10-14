@@ -2,41 +2,120 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAuthStore } from '../stores/authStore';
+import { motion } from 'motion/react';
+import { ArrowRight, Check, CircleAlert, Eye, EyeOff, LoaderCircle, Lock, Mail, UserRound } from 'lucide-react';
 import AuthApi from '../api/AuthApi';
+import { useAuthStore } from '../stores/authStore';
+import AppLogo from '../components/ui/AppLogo';
+import Button from '../components/ui/Button';
+import TextField from '../components/ui/TextField';
+import { cn } from '../lib/cn';
 
 const MODE_LOGIN = 'login';
 const MODE_SIGNUP = 'signup';
 
-const authFormSchema = z.object({
-  email: z.string().email('Email is not valid'),
+const loginSchema = z.object({
+  email: z.string().email('Please enter a valid email'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  name: z.string().optional(),
 });
 
-const INPUT_CLASS = 'w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-3 text-slate-100 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30';
-const LABEL_CLASS = 'text-[10px] font-medium uppercase tracking-[0.12em] text-slate-300';
+const signupSchema = loginSchema.extend({
+  name: z.string().trim().min(2, 'Name must be at least 2 characters'),
+});
 
-function FieldError(props) {
-  if (!props.error) {
-    return null;
-  }
+const PAGE_TEXT = {
+  [MODE_LOGIN]: {
+    title: 'Welcome Back',
+    subtitle: 'Sign in to your AI Chat Messenger account',
+    submit: 'Sign In',
+    submitting: 'Signing in...',
+    switchQuestion: "Don't have an account?",
+    switchAction: 'Create Account',
+    passwordAutoComplete: 'current-password',
+  },
+  [MODE_SIGNUP]: {
+    title: 'Create Account',
+    subtitle: 'Join AI Chat Messenger in a few seconds',
+    submit: 'Create Account',
+    submitting: 'Creating account...',
+    switchQuestion: 'Already have an account?',
+    switchAction: 'Sign In',
+    passwordAutoComplete: 'new-password',
+  },
+};
 
-  return <div className="text-xs text-red-300">{props.error.message}</div>;
+// --- Login pihak ketiga (OAuth) ----------------------------------------------
+// Fungsinya sengaja dikosongkan dulu. Isi saat integrasi OAuth dibuat.
+
+function handleGoogleLogin() {
+  // TODO: arahkan ke endpoint OAuth Google di backend.
 }
 
-function getSubmitLabel(mode, isLoading) {
-  if (mode === MODE_LOGIN) {
-    if (isLoading) {
-      return 'Logging in...';
-    }
-    return 'Login';
+function handleGithubLogin() {
+  // TODO: arahkan ke endpoint OAuth GitHub di backend.
+}
+
+function handleMicrosoftLogin() {
+  // TODO: arahkan ke endpoint OAuth Microsoft di backend.
+}
+
+function handleForgotPassword() {
+  // TODO: tampilkan form reset password.
+}
+
+const SOCIAL_PROVIDERS = [
+  { label: 'Google', onClick: handleGoogleLogin },
+  { label: 'GitHub', onClick: handleGithubLogin },
+  { label: 'Microsoft', onClick: handleMicrosoftLogin },
+];
+
+// -----------------------------------------------------------------------------
+
+function RememberMeCheckbox(props) {
+  return (
+    <label className="flex cursor-pointer select-none items-center gap-2 text-xs text-slate-300">
+      <input
+        type="checkbox"
+        className="peer sr-only"
+        checked={props.checked}
+        onChange={(event) => props.onChange(event.target.checked)}
+      />
+      <span
+        className={cn(
+          'flex h-4 w-4 items-center justify-center rounded border transition-colors',
+          'peer-focus-visible:ring-2 peer-focus-visible:ring-brand-400',
+          props.checked && 'border-brand-600 bg-brand-600',
+          !props.checked && 'border-navy-600 bg-navy-950',
+        )}
+        aria-hidden="true"
+      >
+        {props.checked && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+      </span>
+      Remember me
+    </label>
+  );
+}
+
+function PasswordVisibilityToggle(props) {
+  let Icon = EyeOff;
+  let label = 'Show password';
+
+  if (props.isVisible) {
+    Icon = Eye;
+    label = 'Hide password';
   }
 
-  if (isLoading) {
-    return 'Creating account...';
-  }
-  return 'Create account';
+  return (
+    <button
+      type="button"
+      onClick={props.onToggle}
+      className="rounded p-0.5 text-slate-500 transition-colors hover:text-white"
+      aria-label={label}
+      title={label}
+    >
+      <Icon className="h-4 w-4" />
+    </button>
+  );
 }
 
 export default function LoginPage() {
@@ -45,9 +124,17 @@ export default function LoginPage() {
   const [mode, setMode] = useState(MODE_LOGIN);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
-  const form = useForm({ resolver: zodResolver(authFormSchema) });
+  let schema = loginSchema;
+  if (mode === MODE_SIGNUP) {
+    schema = signupSchema;
+  }
+
+  const form = useForm({ resolver: zodResolver(schema) });
   const fieldErrors = form.formState.errors;
+  const text = PAGE_TEXT[mode];
 
   async function handleValidSubmit(formValues) {
     setIsLoading(true);
@@ -62,8 +149,7 @@ export default function LoginPage() {
         result = await AuthApi.signup(formValues);
       }
 
-      setAuth(result.token, result.user);
-      form.reset();
+      setAuth(result.token, result.user, rememberMe);
     } catch (error) {
       setErrorMessage(error.message || 'Authentication failed');
     } finally {
@@ -71,8 +157,9 @@ export default function LoginPage() {
     }
   }
 
-  function toggleMode() {
+  function switchMode() {
     setErrorMessage(null);
+    form.clearErrors();
 
     if (mode === MODE_LOGIN) {
       setMode(MODE_SIGNUP);
@@ -81,68 +168,130 @@ export default function LoginPage() {
     }
   }
 
-  let toggleLabel = 'Already have an account?';
-  if (mode === MODE_LOGIN) {
-    toggleLabel = 'Need an account?';
+  function getFieldError(fieldName) {
+    if (fieldErrors[fieldName]) {
+      return fieldErrors[fieldName].message;
+    }
+
+    return null;
+  }
+
+  let passwordInputType = 'password';
+  if (isPasswordVisible) {
+    passwordInputType = 'text';
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-8 text-slate-100">
-      <div className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-slate-700/70 bg-slate-900/80 p-6 shadow-2xl backdrop-blur-xl">
-        <div className="absolute -right-14 -top-14 h-48 w-48 rounded-full bg-violet-500/30 blur-3xl" />
-        <div className="absolute -bottom-20 -left-10 h-48 w-48 rounded-full bg-cyan-500/20 blur-3xl" />
+    <div className="flex min-h-full items-center justify-center bg-navy-950 px-4 py-10">
+      <motion.main
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+        className="w-full max-w-[400px] rounded-2xl border border-navy-700 bg-navy-900 px-6 py-8 shadow-popover sm:px-8"
+      >
+        <div className="flex flex-col items-center text-center">
+          <AppLogo variant="bot" size="lg" />
 
-        <div className="relative z-10">
-          <div className="mb-6">
-            <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-violet-300/80">Welcome back</div>
-            <h2 className="mt-2 bg-gradient-to-r from-violet-300 via-sky-300 to-emerald-300 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent">
-              AI Chat Messenger
-            </h2>
+          <motion.div key={mode} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }}>
+            <h1 className="mt-5 text-xl font-semibold text-white">{text.title}</h1>
+            <p className="mt-1.5 text-sm text-slate-400">{text.subtitle}</p>
+          </motion.div>
+        </div>
+
+        <form onSubmit={form.handleSubmit(handleValidSubmit)} className="mt-7 space-y-4" noValidate>
+          {mode === MODE_SIGNUP && (
+            <TextField
+              id="name"
+              label="Name"
+              icon={UserRound}
+              placeholder="Your full name"
+              autoComplete="name"
+              disabled={isLoading}
+              error={getFieldError('name')}
+              {...form.register('name')}
+            />
+          )}
+
+          <TextField
+            id="email"
+            type="email"
+            label="Email"
+            icon={Mail}
+            placeholder="you@example.com"
+            autoComplete="email"
+            disabled={isLoading}
+            error={getFieldError('email')}
+            {...form.register('email')}
+          />
+
+          <TextField
+            id="password"
+            type={passwordInputType}
+            label="Password"
+            icon={Lock}
+            placeholder="Enter your password"
+            autoComplete={text.passwordAutoComplete}
+            disabled={isLoading}
+            error={getFieldError('password')}
+            trailing={
+              <PasswordVisibilityToggle
+                isVisible={isPasswordVisible}
+                onToggle={() => setIsPasswordVisible(!isPasswordVisible)}
+              />
+            }
+            {...form.register('password')}
+          />
+
+          <div className="flex items-center justify-between gap-3">
+            <RememberMeCheckbox checked={rememberMe} onChange={setRememberMe} />
+
+            {mode === MODE_LOGIN && (
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="text-xs font-medium text-brand-400 transition-colors hover:text-brand-300"
+              >
+                Forgot password?
+              </button>
+            )}
           </div>
 
-          <form onSubmit={form.handleSubmit(handleValidSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <label className={LABEL_CLASS}>Email</label>
-              <input {...form.register('email')} className={INPUT_CLASS} placeholder="name@email.com" disabled={isLoading} />
-              <FieldError error={fieldErrors.email} />
+          {errorMessage && (
+            <div className="flex items-center gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-red-300" role="alert">
+              <CircleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              {errorMessage}
             </div>
+          )}
 
-            <div className="space-y-2">
-              <label className={LABEL_CLASS}>Password</label>
-              <input {...form.register('password')} type="password" className={INPUT_CLASS} placeholder="••••••••" disabled={isLoading} />
-              <FieldError error={fieldErrors.password} />
-            </div>
+          <Button type="submit" size="md" fullWidth disabled={isLoading} className="mt-1">
+            {isLoading && <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />}
+            {isLoading && text.submitting}
+            {!isLoading && text.submit}
+            {!isLoading && <ArrowRight className="h-4 w-4" aria-hidden="true" />}
+          </Button>
+        </form>
 
-            {mode === MODE_SIGNUP && (
-              <div className="space-y-2">
-                <label className={LABEL_CLASS}>Name</label>
-                <input {...form.register('name')} className={INPUT_CLASS} placeholder="Your name" disabled={isLoading} />
-              </div>
-            )}
-
-            {errorMessage && (
-              <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">{errorMessage}</div>
-            )}
-
-            <button
-              type="submit"
-              className="w-full rounded-xl bg-gradient-to-r from-violet-500 via-indigo-500 to-cyan-500 px-4 py-3 font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isLoading}
-            >
-              {getSubmitLabel(mode, isLoading)}
-            </button>
-
-            <button
-              type="button"
-              onClick={toggleMode}
-              className="w-full rounded-xl border border-slate-600 bg-slate-800/60 px-4 py-3 font-medium text-slate-100 transition hover:border-slate-500 hover:bg-slate-700/70 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isLoading}
-            >
-              {toggleLabel}
-            </button>
-          </form>
+        <div className="my-6 flex items-center gap-3">
+          <span className="h-px flex-1 bg-navy-700" />
+          <span className="text-xs text-slate-500">or continue with</span>
+          <span className="h-px flex-1 bg-navy-700" />
         </div>
-      </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          {SOCIAL_PROVIDERS.map((provider) => (
+            <Button key={provider.label} variant="outline" size="sm" onClick={provider.onClick} disabled={isLoading}>
+              {provider.label}
+            </Button>
+          ))}
+        </div>
+
+        <p className="mt-6 text-center text-xs text-slate-400">
+          {text.switchQuestion}{' '}
+          <button type="button" onClick={switchMode} className="font-medium text-brand-400 transition-colors hover:text-brand-300">
+            {text.switchAction}
+          </button>
+        </p>
+      </motion.main>
     </div>
   );
 }

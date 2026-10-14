@@ -21,6 +21,14 @@ class ConversationApi {
     const data = await ApiClient.post('/api/conversations', body, token);
     return data.conversation;
   }
+
+  /**
+   * Membuka (atau membuat) percakapan langsung dengan user lain.
+   */
+  static async openDirectConversation(userId, token) {
+    const data = await ApiClient.post('/api/conversations/direct', { userId: userId }, token);
+    return data.conversation;
+  }
 }
 
 export default ConversationApi;

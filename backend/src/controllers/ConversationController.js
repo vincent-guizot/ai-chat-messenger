@@ -1,5 +1,6 @@
 const ConversationService = require('../services/ConversationService');
 const MessageService = require('../services/MessageService');
+const UserService = require('../services/UserService');
 const HttpError = require('../utils/HttpError');
 
 class ConversationController {
@@ -52,6 +53,42 @@ class ConversationController {
       });
 
       return response.json({ ok: true, conversation: conversation });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  /**
+   * POST /api/conversations/direct
+   * Body: { userId }
+   * Membuka percakapan langsung dengan user lain (dibuat jika belum ada).
+   */
+  static async direct(request, response, next) {
+    try {
+      const currentUserId = request.user.id;
+      const otherUserId = request.body.userId;
+
+      if (!otherUserId) {
+        throw HttpError.badRequest('userId required');
+      }
+
+      if (otherUserId === currentUserId) {
+        throw HttpError.badRequest('cannot start a chat with yourself');
+      }
+
+      const otherUser = await UserService.findById(otherUserId);
+
+      if (!otherUser || otherUser.email === UserService.ASSISTANT_EMAIL) {
+        throw HttpError.notFound('user not found');
+      }
+
+      const result = await ConversationService.findOrCreateDirect(currentUserId, otherUserId);
+
+      return response.json({
+        ok: true,
+        conversation: result.conversation,
+        isNew: result.isNew,
+      });
     } catch (error) {
       return next(error);
     }

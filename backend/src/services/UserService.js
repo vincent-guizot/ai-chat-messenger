@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
-const prisma = require('../config/database');
+const prisma = require('../../prisma/prisma');
+const PresenceService = require('./PresenceService');
 
 const PASSWORD_SALT_ROUNDS = 10;
 const ASSISTANT_EMAIL = 'assistant@ai-chat.local';
@@ -47,14 +48,52 @@ class UserService {
     });
   }
 
+  static async findById(userId) {
+    return prisma.user.findUnique({
+      where: { id: userId },
+    });
+  }
+
   /**
-   * Hanya mengembalikan field yang aman dikirim ke client (tanpa passwordHash).
+   * Semua user selain user yang sedang login dan AI Assistant,
+   * lengkap dengan status online. User yang online ditaruh paling atas.
+   */
+  static async findContacts(currentUserId) {
+    const users = await prisma.user.findMany({
+      where: {
+        id: { not: currentUserId },
+        email: { not: ASSISTANT_EMAIL },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    const contacts = users.map(UserService.toPublicUser);
+
+    const onlineContacts = contacts.filter((contact) => contact.online);
+    const offlineContacts = contacts.filter((contact) => !contact.online);
+
+    return onlineContacts.concat(offlineContacts);
+  }
+
+  static async updateLastSeen(userId) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: { lastSeenAt: new Date() },
+    });
+  }
+
+  /**
+   * Hanya mengembalikan field yang aman dikirim ke client (tanpa passwordHash),
+   * ditambah status online dari PresenceService.
    */
   static toPublicUser(user) {
     return {
       id: user.id,
       email: user.email,
       name: user.name,
+      avatarUrl: user.avatarUrl,
+      lastSeenAt: user.lastSeenAt,
+      online: PresenceService.isOnline(user.id),
     };
   }
 }

@@ -1,4 +1,4 @@
-const prisma = require('../config/database');
+const prisma = require('../../prisma/prisma');
 
 class MessageService {
   static async findAllInConversation(conversationId) {

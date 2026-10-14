@@ -1,5 +1,5 @@
 const request = require('supertest');
-const prisma = require('../../src/config/database');
+const prisma = require('../../prisma/prisma');
 const app = require('../../src/app');
 
 class TestHelpers {
@@ -7,6 +7,7 @@ class TestHelpers {
    * Mengosongkan semua tabel (urutan penting karena foreign key).
    */
   static async resetDatabase() {
+    await prisma.notification.deleteMany();
     await prisma.message.deleteMany();
     await prisma.participant.deleteMany();
     await prisma.conversation.deleteMany();

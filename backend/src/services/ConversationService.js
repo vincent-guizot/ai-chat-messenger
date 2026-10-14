@@ -1,4 +1,4 @@
-const prisma = require('../config/database');
+const prisma = require('../../prisma/prisma');
 const UserService = require('./UserService');
 const MessageService = require('./MessageService');
 
@@ -60,12 +60,53 @@ class ConversationService {
     return ConversationService.findById(conversation.id);
   }
 
+  /**
+   * Mencari percakapan langsung (dm) antara dua user.
+   * Jika belum ada, percakapan baru dibuat. Judulnya tidak disimpan,
+   * karena di frontend judul DM selalu memakai nama lawan bicara.
+   */
+  static async findOrCreateDirect(currentUserId, otherUserId) {
+    const existingConversation = await prisma.conversation.findFirst({
+      where: {
+        type: 'dm',
+        AND: [
+          { participants: { some: { userId: currentUserId } } },
+          { participants: { some: { userId: otherUserId } } },
+        ],
+      },
+    });
+
+    if (existingConversation) {
+      return {
+        conversation: await ConversationService.findById(existingConversation.id),
+        isNew: false,
+      };
+    }
+
+    const createdConversation = await ConversationService.createConversation({
+      creatorId: currentUserId,
+      type: 'dm',
+      title: null,
+      participantIds: [otherUserId],
+      withAi: false,
+    });
+
+    return {
+      conversation: createdConversation,
+      isNew: true,
+    };
+  }
+
   static async findById(conversationId) {
     const conversation = await prisma.conversation.findUnique({
       where: { id: conversationId },
       include: {
         participants: {
           include: { user: true },
+        },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
         },
       },
     });
@@ -106,6 +147,21 @@ class ConversationService {
     });
 
     return participant !== null;
+  }
+
+  /**
+   * Id semua peserta manusia (tanpa AI Assistant) di sebuah percakapan.
+   */
+  static async findHumanParticipantIds(conversationId) {
+    const participants = await prisma.participant.findMany({
+      where: {
+        conversationId: conversationId,
+        role: { not: 'assistant' },
+      },
+      select: { userId: true },
+    });
+
+    return participants.map((participant) => participant.userId);
   }
 
   static async hasAssistant(conversationId) {

@@ -13,23 +13,27 @@ model User {
   name                 String?
   passwordHash         String
   avatarUrl            String?
+  lastSeenAt           DateTime?
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
   participants         Participant[]
   messages             Message[]      @relation("sender_messages")
   createdConversations Conversation[]
+  notifications        Notification[] @relation("notification_recipient")
+  sentNotifications    Notification[] @relation("notification_actor")
 }
 
 model Conversation {
-  id           String        @id @default(uuid())
-  type         String        @default("dm")
-  title        String?
-  createdById  String
-  createdBy    User          @relation(fields: [createdById], references: [id], onDelete: Cascade)
-  participants Participant[]
-  messages     Message[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id            String         @id @default(uuid())
+  type          String         @default("dm")
+  title         String?
+  createdById   String
+  createdBy     User           @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  participants  Participant[]
+  messages      Message[]
+  notifications Notification[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model Participant {
@@ -56,4 +60,28 @@ model Message {
   createdAt      DateTime     @default(now())
 
   @@index([conversationId, createdAt])
+}
+
+/// Notifikasi untuk seorang user, mis. pesan baru di direct message.
+model Notification {
+  id             String        @id @default(uuid())
+  userId         String
+  user           User          @relation("notification_recipient", fields: [userId], references: [id], onDelete: Cascade)
+  /// "message" | "system"
+  type           String        @default("message")
+  title          String
+  body           String?
+  /// Pengirim / pemicu notifikasi (boleh kosong untuk notifikasi sistem)
+  actorId        String?
+  actor          User?         @relation("notification_actor", fields: [actorId], references: [id], onDelete: SetNull)
+  conversationId String?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  /// Data tambahan bebas, mis. { messageId }
+  data           Json?
+  /// Kosong = belum dibaca
+  readAt         DateTime?
+  createdAt      DateTime      @default(now())
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
 }

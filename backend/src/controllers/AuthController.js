@@ -1,5 +1,6 @@
 const UserService = require('../services/UserService');
 const TokenService = require('../services/TokenService');
+const NotificationService = require('../services/NotificationService');
 const HttpError = require('../utils/HttpError');
 
 class AuthController {
@@ -29,6 +30,13 @@ class AuthController {
 
       const user = await UserService.createUser(email, password, name);
       const token = TokenService.createToken(user);
+
+      await NotificationService.create({
+        userId: user.id,
+        type: NotificationService.TYPES.system,
+        title: 'Welcome to AI Chat Messenger',
+        body: 'Start a chat with the AI Assistant, or find someone online in Contacts.',
+      });
 
       return response.json({
         ok: true,

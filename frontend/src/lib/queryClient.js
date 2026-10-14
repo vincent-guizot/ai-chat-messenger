@@ -21,5 +21,6 @@ export const queryClient = new QueryClient({
 export const queryKeys = {
   conversations: ['conversations'],
   contacts: ['contacts'],
+  notifications: ['notifications'],
   messages: (conversationId) => ['messages', conversationId],
 };

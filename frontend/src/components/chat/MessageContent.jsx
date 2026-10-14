@@ -12,9 +12,9 @@ function InlineText(props) {
         <code
           key={index}
           className={cn(
-            'rounded-md px-1.5 py-0.5 font-mono text-[0.85em]',
+            'rounded px-1 py-px font-mono text-[0.85em]',
             props.isOwn && 'bg-white/20 text-white',
-            !props.isOwn && 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-500/10 dark:text-fuchsia-300',
+            !props.isOwn && 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300',
           )}
         >
           {part.text}
@@ -46,7 +46,7 @@ export default function MessageContent(props) {
   const blocks = parseMarkdown(props.text);
 
   return (
-    <div className="space-y-2 break-words">
+    <div className="space-y-1.5 break-words">
       {blocks.map((block, index) => {
         if (block.type === 'code') {
           return <CodeBlock key={index} language={block.language} code={block.code} />;
@@ -54,7 +54,7 @@ export default function MessageContent(props) {
 
         if (block.type === 'heading') {
           return (
-            <h3 key={index} className="pt-1 text-base font-bold text-slate-900 dark:text-white">
+            <h3 key={index} className="pt-1 text-sm font-semibold text-slate-900 dark:text-white">
               <InlineText text={block.text} isOwn={props.isOwn} />
             </h3>
           );
@@ -69,10 +69,10 @@ export default function MessageContent(props) {
           return (
             <ListTag
               key={index}
-              className={cn('space-y-1 pl-6', block.ordered && 'list-decimal', !block.ordered && 'list-disc')}
+              className={cn('space-y-0.5 pl-5', block.ordered && 'list-decimal', !block.ordered && 'list-disc')}
             >
               {block.items.map((item, itemIndex) => (
-                <li key={itemIndex} className="pl-1">
+                <li key={itemIndex} className="pl-0.5">
                   <InlineText text={item} isOwn={props.isOwn} />
                 </li>
               ))}

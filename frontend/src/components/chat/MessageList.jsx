@@ -33,9 +33,9 @@ function isSameSender(firstMessage, secondMessage) {
 
 function CenteredNotice(props) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center text-slate-500 dark:text-slate-400">
+    <div className="flex flex-1 flex-col items-center justify-center gap-2.5 py-16 text-center text-slate-500 dark:text-slate-400">
       {props.icon}
-      <p className="max-w-sm text-[15px]">{props.children}</p>
+      <p className="max-w-sm text-sm">{props.children}</p>
     </div>
   );
 }
@@ -54,7 +54,7 @@ export default function MessageList(props) {
 
   if (props.isLoading) {
     return (
-      <CenteredNotice icon={<LoaderCircle className="h-6 w-6 animate-spin text-brand-500" />}>Loading messages...</CenteredNotice>
+      <CenteredNotice icon={<LoaderCircle className="h-5 w-5 animate-spin text-brand-500" />}>Loading messages...</CenteredNotice>
     );
   }
 
@@ -74,9 +74,9 @@ export default function MessageList(props) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5 px-4 py-6 sm:px-8">
+    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 px-4 py-5 sm:px-6">
       {messages.length === 0 && isSearching && (
-        <CenteredNotice icon={<SearchX className="h-6 w-6" />}>No messages match “{props.searchText}”.</CenteredNotice>
+        <CenteredNotice icon={<SearchX className="h-5 w-5" />}>No messages match “{props.searchText}”.</CenteredNotice>
       )}
 
       {messages.length === 0 && !isSearching && !props.isAssistant && (

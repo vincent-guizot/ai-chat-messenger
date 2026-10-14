@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Paperclip, Plus, SendHorizontal, Smile } from 'lucide-react';
+import { cn } from '../../lib/cn';
 import IconButton from '../ui/IconButton';
 
 const MAX_TEXTAREA_HEIGHT_PX = 160;
@@ -66,11 +67,31 @@ export default function MessageInput(props) {
   const canSend = !props.disabled && text.trim() !== '';
 
   return (
-    <div className="px-4 pb-4 sm:px-8 sm:pb-6">
-      <div className="mx-auto max-w-5xl">
-        <div className="flex items-end gap-2 rounded-[1.75rem] border border-slate-200/80 bg-white p-2 shadow-card transition focus-within:border-brand-300 sm:gap-3 sm:p-2.5 dark:border-white/10 dark:bg-white/[0.06]">
-          <IconButton variant="muted" size="lg" label="Add" onClick={handleAddAttachment}>
-            <Plus className="h-5 w-5" />
+    <div className="shrink-0 px-4 pb-4 sm:px-6">
+      <div className="mx-auto max-w-4xl">
+        {props.connectionNotice && (
+          <p
+            className={cn(
+              'mb-2 flex items-center justify-center gap-1.5 text-xs',
+              props.connectionNotice.tone === 'warning' && 'text-amber-600 dark:text-warning',
+              props.connectionNotice.tone === 'danger' && 'text-red-600 dark:text-red-400',
+            )}
+          >
+            <span
+              className={cn(
+                'h-1.5 w-1.5 rounded-full',
+                props.connectionNotice.tone === 'warning' && 'bg-warning',
+                props.connectionNotice.tone === 'danger' && 'bg-danger',
+              )}
+              aria-hidden="true"
+            />
+            {props.connectionNotice.text}
+          </p>
+        )}
+
+        <div className="flex items-end gap-1.5 rounded-xl border border-slate-200 bg-white p-1.5 shadow-card transition-colors focus-within:border-brand-400 dark:border-navy-700 dark:bg-navy-900">
+          <IconButton variant="muted" size="md" label="Add" onClick={handleAddAttachment}>
+            <Plus className="h-4 w-4" />
           </IconButton>
 
           <textarea
@@ -81,24 +102,22 @@ export default function MessageInput(props) {
             onKeyDown={handleKeyDown}
             placeholder={props.placeholder}
             disabled={props.disabled}
-            className="max-h-40 min-h-12 flex-1 resize-none bg-transparent py-3 text-[15px] leading-6 text-slate-800 placeholder:text-slate-400 focus:outline-none disabled:cursor-not-allowed dark:text-slate-100"
+            className="max-h-40 min-h-9 flex-1 resize-none bg-transparent px-1 py-2 text-sm leading-5 text-slate-800 placeholder:text-slate-400 focus:outline-none disabled:cursor-not-allowed dark:text-slate-100"
           />
 
-          <div className="flex items-center gap-1 self-center">
+          <div className="flex items-center self-end">
             <IconButton variant="ghost" size="md" label="Attach file" onClick={handleAddAttachment} className="hidden sm:inline-flex">
-              <Paperclip className="h-5 w-5" />
+              <Paperclip className="h-4 w-4" />
             </IconButton>
             <IconButton variant="ghost" size="md" label="Emoji" onClick={handleOpenEmojiPicker} className="hidden sm:inline-flex">
-              <Smile className="h-5 w-5" />
+              <Smile className="h-4 w-4" />
             </IconButton>
           </div>
 
-          <IconButton variant="primary" size="lg" label="Send message" onClick={submit} disabled={!canSend}>
-            <SendHorizontal className="h-5 w-5" />
+          <IconButton variant="primary" size="md" label="Send message" onClick={submit} disabled={!canSend}>
+            <SendHorizontal className="h-4 w-4" />
           </IconButton>
         </div>
-
-        {props.statusText && <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">{props.statusText}</p>}
       </div>
     </div>
   );

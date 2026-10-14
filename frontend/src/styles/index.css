@@ -1,32 +1,39 @@
 @import "tailwindcss";
 
-/* Dark mode diaktifkan dengan class "dark" pada <html> (lihat stores/uiStore.js). */
+/* Dark mode diaktifkan dengan class "dark" pada <html> (lihat App.jsx & stores/uiStore.js). */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Warna utama (biru) */
-  --color-brand-50: #eef3ff;
-  --color-brand-100: #dce6ff;
-  --color-brand-200: #bccfff;
-  --color-brand-300: #8eacff;
-  --color-brand-400: #5f84ff;
-  --color-brand-500: #3d63ff;
-  --color-brand-600: #2747f0;
-  --color-brand-700: #1f37cc;
-  --color-brand-800: #1d30a3;
-  --color-brand-900: #1c2c80;
+  /* Biru: warna utama (tombol, pesan sendiri, link) */
+  --color-brand-50: #eff5ff;
+  --color-brand-100: #dbe7fe;
+  --color-brand-200: #bfd5fe;
+  --color-brand-300: #93b8fd;
+  --color-brand-400: #6090fa;
+  --color-brand-500: #3b6ef6;
+  --color-brand-600: #2554eb;
+  --color-brand-700: #1d42d0;
+  --color-brand-800: #1e37a8;
+  --color-brand-900: #1e3384;
 
-  /* Biru gelap untuk sidebar & halaman login */
-  --color-navy-700: #13246b;
-  --color-navy-800: #0d1a55;
-  --color-navy-900: #08113d;
-  --color-navy-950: #040a29;
+  /* Navy: sidebar, halaman login, dan mode gelap */
+  --color-navy-600: #2a3a6e;
+  --color-navy-700: #1f2c58;
+  --color-navy-800: #172246;
+  --color-navy-900: #101a38;
+  --color-navy-950: #0a1128;
 
-  --shadow-glow: 0 10px 30px -8px rgb(61 99 255 / 0.65);
-  --shadow-card: 0 12px 40px -18px rgb(15 23 72 / 0.35);
+  /* Warna aksen untuk status */
+  --color-success: #22c55e; /* online, berhasil */
+  --color-warning: #eab308; /* menghubungkan, peringatan */
+  --color-danger: #ef4444; /* error, offline, badge belum dibaca */
+  --color-info: #0ea5e9; /* notifikasi sistem, informasi */
+
+  --shadow-card: 0 1px 2px rgb(16 26 56 / 0.06), 0 4px 16px -8px rgb(16 26 56 / 0.12);
+  --shadow-popover: 0 12px 32px -12px rgb(10 17 40 / 0.35);
 }
 
 @layer base {
@@ -36,12 +43,13 @@
     height: 100%;
   }
 
+  /* Ukuran teks dasar 14px (text-sm). */
   body {
-    @apply bg-slate-50 font-sans text-slate-800 antialiased dark:bg-navy-950 dark:text-slate-100;
+    @apply bg-slate-50 font-sans text-sm text-slate-800 antialiased dark:bg-navy-950 dark:text-slate-100;
   }
 
   ::selection {
-    @apply bg-brand-500/30;
+    @apply bg-brand-500/25;
   }
 
   * {
@@ -51,41 +59,9 @@
 }
 
 @layer components {
-  /* Latar halaman login: biru gelap dengan cahaya lembut */
-  .auth-background {
-    background:
-      radial-gradient(60rem 40rem at 85% -10%, rgb(61 99 255 / 0.35), transparent 60%),
-      radial-gradient(50rem 35rem at -10% 110%, rgb(39 71 240 / 0.45), transparent 60%),
-      radial-gradient(30rem 20rem at 50% 50%, rgb(29 48 163 / 0.35), transparent 70%),
-      linear-gradient(160deg, var(--color-navy-900) 0%, var(--color-navy-950) 55%, #030720 100%);
-  }
-
-  /* Latar sidebar: biru gelap dengan gelombang di bagian bawah */
-  .sidebar-background {
-    background:
-      radial-gradient(40rem 18rem at 120% 105%, rgb(61 99 255 / 0.45), transparent 60%),
-      radial-gradient(30rem 14rem at -30% 95%, rgb(39 71 240 / 0.35), transparent 60%),
-      linear-gradient(180deg, var(--color-navy-900) 0%, var(--color-navy-800) 100%);
-  }
-
-  /* Latar area chat (mode terang & gelap) */
-  .chat-background {
-    background:
-      radial-gradient(50rem 30rem at 100% 0%, rgb(188 207 255 / 0.45), transparent 60%),
-      radial-gradient(40rem 26rem at 0% 100%, rgb(220 230 255 / 0.7), transparent 60%),
-      #f5f8ff;
-  }
-
-  .dark .chat-background {
-    background:
-      radial-gradient(50rem 30rem at 100% 0%, rgb(39 71 240 / 0.18), transparent 60%),
-      radial-gradient(40rem 26rem at 0% 100%, rgb(29 48 163 / 0.2), transparent 60%),
-      #070d2b;
-  }
-
   /* Warna token untuk blok kode (lihat utils/highlightCode.js) */
   .code-token-keyword {
-    @apply text-fuchsia-600 dark:text-fuchsia-400;
+    @apply text-brand-700 dark:text-brand-300;
   }
 
   .code-token-string {
@@ -97,10 +73,10 @@
   }
 
   .code-token-number {
-    @apply text-amber-600 dark:text-amber-400;
+    @apply text-amber-700 dark:text-amber-400;
   }
 
   .code-token-function {
-    @apply text-brand-600 dark:text-brand-300;
+    @apply text-sky-700 dark:text-sky-300;
   }
 }

@@ -5,7 +5,7 @@ Aplikasi chat real-time: ngobrol dengan AI Assistant dan chat langsung dengan us
 | Bagian   | Teknologi                                                                                   |
 | -------- | ------------------------------------------------------------------------------------------- |
 | Backend  | Node.js, Express, Socket.IO, Prisma, PostgreSQL, JWT                                        |
-| Frontend | React 18, Vite, Tailwind CSS 4, React Query, Zustand, Motion, lucide-react, cva, React Hook Form + Zod |
+| Frontend | React 18, Vite, Tailwind CSS 4, React Query, Zustand, Motion, lucide-react, cva, React Hook Form + Zod, font Inter |
 | AI       | Ollama (default) atau Hugging Face Inference API                                            |
 
 ## Fitur
@@ -15,6 +15,7 @@ Aplikasi chat real-time: ngobrol dengan AI Assistant dan chat langsung dengan us
 - **Direct message** ke user lain: buka tab **Contacts**, klik nama user
 - Status **online / last seen** secara real-time
 - Indikator **sedang mengetik** (user & AI)
+- **Notifikasi** (tabel `Notification`): pesan DM baru + notifikasi sistem, lonceng dengan badge, tandai sudah dibaca
 - Pencarian pesan, mode terang/gelap, sidebar bisa diciutkan, tampilan mobile
 - Pintasan **Alt + N** untuk chat AI baru
 - Tombol Google / GitHub / Microsoft, "Forgot password", lampiran & emoji: **tampilan saja**, fungsinya masih kosong (`TODO`)
@@ -36,7 +37,7 @@ ai-chat-messenger/
 │   │   ├── controllers/           # class + static method, menerima request & mengirim response
 │   │   ├── middlewares/           # AuthMiddleware, ErrorMiddleware
 │   │   ├── routes/                # hanya mendaftarkan URL -> controller
-│   │   ├── services/              # logika bisnis & query database (+ PresenceService untuk status online)
+│   │   ├── services/              # logika bisnis & query database (Presence, Notification, dll.)
 │   │   ├── sockets/               # event Socket.IO (ChatSocket)
 │   │   ├── utils/                 # HttpError
 │   │   ├── app.js                 # aplikasi Express
@@ -48,12 +49,13 @@ ai-chat-messenger/
         ├── components/
         │   ├── ui/                # komponen dasar: Button, IconButton, TextField, Avatar, DropdownMenu, Toast
         │   ├── sidebar/           # sidebar: navigasi, daftar chat AI, DM, kontak, footer user
+        │   ├── notifications/     # lonceng & panel notifikasi
         │   └── chat/              # header, daftar pesan, gelembung pesan, blok kode, input
-        ├── hooks/                 # React Query (useChatData), socket (useChatSocket), kirim pesan
-        ├── lib/                   # socket, queryClient, chatCache, cn()
+        ├── hooks/                 # React Query (useChatData, useNotifications), socket (useChatSocket), kirim pesan
+        ├── lib/                   # socket, queryClient, chatCache, notificationCache, cn()
         ├── pages/                 # LoginPage, ChatPage
         ├── stores/                # Zustand: auth, ui (tema/sidebar), chat (status/typing)
-        ├── styles/                # Tailwind v4 + tema warna
+        ├── styles/                # Tailwind v4 + token warna (navy, biru, aksen)
         └── utils/                 # format waktu, markdown, highlight kode
 ```
 
@@ -145,6 +147,9 @@ jadi data development tidak ikut terhapus.
 | POST   | `/api/conversations`              | ya   | `{ type?, title?, participantIds?, withAi? }` |
 | POST   | `/api/conversations/direct`       | ya   | `{ userId }` buka/buat chat langsung          |
 | GET    | `/api/conversations/:id/messages` | ya   | pesan dalam percakapan                        |
+| GET    | `/api/notifications`              | ya   | 30 notifikasi terbaru + `unreadCount`         |
+| PATCH  | `/api/notifications/:id/read`     | ya   | tandai satu notifikasi sudah dibaca           |
+| PATCH  | `/api/notifications/read-all`     | ya   | `{ conversationId? }` tandai semua dibaca     |
 
 Socket.IO (token dikirim lewat `auth: { token }`). Setiap user otomatis masuk room pribadi
 `user:<id>`, jadi pesan DM tetap sampai walaupun percakapannya belum dibuka.
@@ -158,4 +163,33 @@ Socket.IO (token dikirim lewat `auth: { token }`). Setiap user otomatis masuk ro
 | server → client | `typing`           | `{ conversationId, userId, isTyping }` |
 | server → client | `assistant:typing` | `{ conversationId, isTyping }`         |
 | server → client | `presence:update`  | `{ userId, online, lastSeenAt }`       |
+| server → client | `notification:new` | notifikasi baru (hanya ke penerimanya) |
 | server → client | `error`            | `{ message }`                          |
+
+## Tema warna
+
+Didefinisikan di `frontend/src/styles/index.css` (blok `@theme`), dipakai sebagai class Tailwind:
+
+| Token                    | Dipakai untuk                                  |
+| ------------------------ | ---------------------------------------------- |
+| `navy-600` … `navy-950`  | sidebar, halaman login, mode gelap             |
+| `brand-50` … `brand-900` | warna utama biru: tombol, pesan sendiri, link  |
+| `success` (hijau)        | online, berhasil disalin                       |
+| `warning` (kuning)       | sedang menghubungkan ke server                 |
+| `danger` (merah)         | error, koneksi terputus, badge belum dibaca    |
+| `info` (biru muda)       | notifikasi sistem, toast informasi             |
+
+## Tabel `Notification`
+
+| Kolom            | Keterangan                                        |
+| ---------------- | ------------------------------------------------- |
+| `userId`         | penerima notifikasi                               |
+| `type`           | `message` (pesan DM baru) atau `system`           |
+| `title`, `body`  | judul & isi singkat                               |
+| `actorId`        | user pemicu (mis. pengirim pesan), boleh kosong   |
+| `conversationId` | percakapan terkait, boleh kosong                  |
+| `data`           | JSON tambahan, mis. `{ messageId }`               |
+| `readAt`         | kosong = belum dibaca                             |
+
+Notifikasi dibuat otomatis saat ada pesan di direct message (untuk penerima) dan saat user baru mendaftar
+(notifikasi sambutan). Membuka sebuah percakapan otomatis menandai notifikasinya sebagai sudah dibaca.

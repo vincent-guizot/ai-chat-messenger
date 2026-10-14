@@ -2,30 +2,28 @@ import { cva } from 'class-variance-authority';
 import { cn } from '../../lib/cn';
 
 const iconButtonVariants = cva(
-  'inline-flex shrink-0 items-center justify-center transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 disabled:cursor-not-allowed disabled:opacity-50',
+  'relative inline-flex shrink-0 items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       variant: {
-        // Tombol kotak putih dengan bayangan (header chat)
+        // Tombol kotak dengan garis (header chat)
         card:
-          'rounded-2xl border border-slate-200/80 bg-white text-slate-700 shadow-sm hover:border-brand-200 hover:text-brand-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:text-white',
+          'rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:text-brand-700 dark:border-navy-700 dark:bg-navy-800 dark:text-slate-300 dark:hover:border-brand-500 dark:hover:text-white',
         // Tombol transparan (ikon di input pesan)
         ghost:
-          'rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100',
-        // Tombol transparan di atas latar gelap (sidebar)
-        sidebar:
-          'rounded-xl text-slate-300 hover:bg-white/10 hover:text-white',
-        // Tombol bulat biru (kirim pesan)
-        primary:
-          'rounded-full bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-glow hover:from-brand-400 hover:to-brand-600',
-        // Tombol bulat abu-abu (tombol "+")
+          'rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-navy-800 dark:hover:text-slate-100',
+        // Tombol transparan di atas latar navy (sidebar)
+        sidebar: 'rounded-lg text-slate-400 hover:bg-navy-800 hover:text-white',
+        // Tombol biru (kirim pesan)
+        primary: 'rounded-lg bg-brand-600 text-white hover:bg-brand-700',
+        // Tombol abu-abu (tombol "+")
         muted:
-          'rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15',
+          'rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-navy-800 dark:text-slate-300 dark:hover:bg-navy-700',
       },
       size: {
         sm: 'h-8 w-8',
-        md: 'h-10 w-10',
-        lg: 'h-12 w-12',
+        md: 'h-9 w-9',
+        lg: 'h-10 w-10',
       },
     },
     defaultVariants: {

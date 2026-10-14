@@ -155,13 +155,35 @@ async function createDemoDirectMessage(demoUser, contactUser) {
     },
   });
 
-  await prisma.message.create({
+  const message = await prisma.message.create({
     data: {
       conversationId: conversation.id,
       senderId: contactUser.id,
       senderRole: 'user',
       content: 'Halo! Sudah coba fitur chat langsung?',
     },
+  });
+
+  // Notifikasi belum dibaca untuk user demo, agar panel notifikasi bisa langsung dicoba.
+  await prisma.notification.createMany({
+    data: [
+      {
+        userId: demoUser.id,
+        type: 'system',
+        title: 'Welcome to AI Chat Messenger',
+        body: 'Start a chat with the AI Assistant, or find someone online in Contacts.',
+        readAt: new Date(),
+      },
+      {
+        userId: demoUser.id,
+        type: 'message',
+        title: `New message from ${contactUser.name}`,
+        body: message.content,
+        actorId: contactUser.id,
+        conversationId: conversation.id,
+        data: { messageId: message.id },
+      },
+    ],
   });
 }
 

@@ -62,19 +62,21 @@ export function formatLastSeen(lastSeenAt) {
   return `Last seen ${Math.floor(elapsedMs / DAY_MS)}d ago`;
 }
 
-const AVATAR_GRADIENTS = [
-  'from-sky-400 to-blue-600',
-  'from-violet-400 to-indigo-600',
-  'from-emerald-400 to-teal-600',
-  'from-amber-400 to-orange-600',
-  'from-pink-400 to-rose-600',
-  'from-cyan-400 to-sky-600',
+// Warna solid avatar: variasi biru & navy, ditambah beberapa warna aksen yang lembut.
+const AVATAR_COLORS = [
+  'bg-brand-600',
+  'bg-navy-600',
+  'bg-sky-600',
+  'bg-indigo-600',
+  'bg-emerald-600',
+  'bg-amber-600',
+  'bg-rose-600',
 ];
 
 /**
- * Warna avatar yang selalu sama untuk teks yang sama (mis. id atau nama user).
+ * Warna avatar yang selalu sama untuk teks yang sama (mis. nama user).
  */
-export function getAvatarGradient(seedText) {
+export function getAvatarColor(seedText) {
   const text = seedText || '';
   let total = 0;
 
@@ -82,7 +84,28 @@ export function getAvatarGradient(seedText) {
     total = total + text.charCodeAt(index);
   }
 
-  return AVATAR_GRADIENTS[total % AVATAR_GRADIENTS.length];
+  return AVATAR_COLORS[total % AVATAR_COLORS.length];
+}
+
+/**
+ * Waktu relatif singkat untuk notifikasi, contoh: "just now", "5m", "2h", "3d".
+ */
+export function formatRelativeTime(dateValue) {
+  const elapsedMs = Date.now() - new Date(dateValue).getTime();
+
+  if (elapsedMs < MINUTE_MS) {
+    return 'just now';
+  }
+
+  if (elapsedMs < HOUR_MS) {
+    return `${Math.floor(elapsedMs / MINUTE_MS)}m ago`;
+  }
+
+  if (elapsedMs < DAY_MS) {
+    return `${Math.floor(elapsedMs / HOUR_MS)}h ago`;
+  }
+
+  return `${Math.floor(elapsedMs / DAY_MS)}d ago`;
 }
 
 /**

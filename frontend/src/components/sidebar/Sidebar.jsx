@@ -12,6 +12,7 @@ import {
   useOpenConversation,
   useOpenDirectConversation,
 } from '../../hooks/useChatData';
+import { useUnreadCountByConversation } from '../../hooks/useNotifications';
 import { isAssistantConversation, isDirectConversation } from '../../utils/conversations';
 import useMinuteTick from '../../hooks/useMinuteTick';
 import AppLogo from '../ui/AppLogo';
@@ -20,8 +21,8 @@ import SidebarNav from './SidebarNav';
 import UserFooter from './UserFooter';
 import { AssistantConversationList, ContactList, DirectConversationList } from './SidebarLists';
 
-const EXPANDED_WIDTH = 360;
-const COLLAPSED_WIDTH = 96;
+const EXPANDED_WIDTH = 288;
+const COLLAPSED_WIDTH = 68;
 const EMPTY_LIST = [];
 
 const SECTION_TITLES = {
@@ -47,6 +48,7 @@ function SidebarContent(props) {
   const conversationsQuery = useConversationsQuery();
   const contactsQuery = useContactsQuery();
   const contactsById = useContactsById();
+  const unreadByConversation = useUnreadCountByConversation();
 
   const openConversation = useOpenConversation();
   const createAiConversation = useCreateAiConversation();
@@ -59,6 +61,11 @@ function SidebarContent(props) {
   const directConversations = useMemo(() => conversations.filter(isDirectConversation), [conversations]);
   const onlineCount = contacts.filter((contact) => contact.online).length;
 
+  let unreadDirectCount = 0;
+  for (const conversation of directConversations) {
+    unreadDirectCount = unreadDirectCount + (unreadByConversation[conversation.id] || 0);
+  }
+
   let CollapseIcon = ChevronsLeft;
   let collapseLabel = 'Collapse sidebar';
   if (isCollapsed) {
@@ -67,21 +74,21 @@ function SidebarContent(props) {
   }
 
   return (
-    <div className="sidebar-background flex h-full flex-col gap-6 px-5 py-6 text-white">
+    <div className="flex h-full flex-col gap-4 border-r border-navy-800 bg-navy-900 px-3 py-4 text-white">
       {/* Logo & tombol ciutkan */}
-      <div className={cn('flex items-center gap-3', isCollapsed && 'flex-col')}>
+      <div className={cn('flex items-center gap-2.5 px-1', isCollapsed && 'flex-col')}>
         <AppLogo />
-        {!isCollapsed && <span className="flex-1 truncate text-xl font-bold tracking-tight">AI Chat Messenger</span>}
+        {!isCollapsed && <span className="flex-1 truncate text-[15px] font-semibold">AI Chat Messenger</span>}
 
         {props.onClose && (
-          <IconButton variant="sidebar" label="Close menu" onClick={props.onClose}>
-            <X className="h-5 w-5" />
+          <IconButton variant="sidebar" size="sm" label="Close menu" onClick={props.onClose}>
+            <X className="h-4 w-4" />
           </IconButton>
         )}
 
         {!props.onClose && (
-          <IconButton variant="sidebar" label={collapseLabel} onClick={toggleSidebarCollapsed}>
-            <CollapseIcon className="h-5 w-5" />
+          <IconButton variant="sidebar" size="sm" label={collapseLabel} onClick={toggleSidebarCollapsed}>
+            <CollapseIcon className="h-4 w-4" />
           </IconButton>
         )}
       </div>
@@ -93,33 +100,39 @@ function SidebarContent(props) {
         disabled={createAiConversation.isPending}
         title="New Chat (Alt + N)"
         className={cn(
-          'flex h-14 items-center gap-4 rounded-2xl border border-brand-300/40 bg-gradient-to-r from-brand-500 to-brand-600 px-5 text-[15px] font-semibold text-white shadow-glow transition',
-          'hover:-translate-y-px hover:from-brand-400 disabled:opacity-70',
+          'flex h-9 items-center gap-2.5 rounded-lg bg-brand-600 px-3 text-sm font-medium text-white transition-colors',
+          'hover:bg-brand-700 disabled:opacity-70',
           isCollapsed && 'justify-center px-0',
         )}
       >
-        <SquarePen className="h-5 w-5 shrink-0" aria-hidden="true" />
+        <SquarePen className="h-4 w-4 shrink-0" aria-hidden="true" />
         {!isCollapsed && <span className="flex-1 text-left">New Chat</span>}
         {!isCollapsed && (
-          <kbd className="rounded-lg border border-white/25 bg-white/10 px-2 py-0.5 font-sans text-xs font-medium text-white/80">
+          <kbd className="rounded border border-white/25 px-1.5 py-px font-sans text-[10px] font-medium text-white/80">
             Alt N
           </kbd>
         )}
       </button>
 
-      <SidebarNav activeTab={activeTab} onChange={setActiveTab} isCollapsed={isCollapsed} onlineCount={onlineCount} />
+      <SidebarNav
+        activeTab={activeTab}
+        onChange={setActiveTab}
+        isCollapsed={isCollapsed}
+        onlineCount={onlineCount}
+        unreadDirectCount={unreadDirectCount}
+      />
 
-      <div className="h-px bg-white/10" />
+      <div className="h-px bg-navy-800" />
 
       {/* Daftar sesuai tab yang aktif */}
-      <div className="-mx-2 flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col">
         {!isCollapsed && (
-          <h2 className="mb-2 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-300/80">
+          <h2 className="mb-1.5 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
             {SECTION_TITLES[activeTab]}
           </h2>
         )}
 
-        <div className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2 pb-2">
+        <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto">
           {activeTab === SIDEBAR_TABS.assistant && (
             <AssistantConversationList
               conversations={assistantConversations}
@@ -134,6 +147,7 @@ function SidebarContent(props) {
             <DirectConversationList
               conversations={directConversations}
               contactsById={contactsById}
+              unreadByConversation={unreadByConversation}
               isLoading={conversationsQuery.isLoading}
               activeConversationId={activeConversationId}
               isCollapsed={isCollapsed}
@@ -174,7 +188,7 @@ export default function Sidebar(props) {
         className="hidden h-full shrink-0 overflow-hidden lg:block"
         initial={false}
         animate={{ width: desktopWidth }}
-        transition={{ duration: 0.25, ease: 'easeInOut' }}
+        transition={{ duration: 0.2, ease: 'easeInOut' }}
       >
         <SidebarContent isCollapsed={isSidebarCollapsed} onLogout={props.onLogout} />
       </motion.aside>
@@ -184,18 +198,18 @@ export default function Sidebar(props) {
         {isMobileSidebarOpen && (
           <div className="fixed inset-0 z-40 lg:hidden">
             <motion.div
-              className="absolute inset-0 bg-navy-950/60 backdrop-blur-sm"
+              className="absolute inset-0 bg-navy-950/60"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMobileSidebarOpen(false)}
             />
             <motion.aside
-              className="absolute inset-y-0 left-0 w-[min(360px,88vw)] shadow-2xl"
+              className="absolute inset-y-0 left-0 w-[min(288px,85vw)]"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
             >
               <SidebarContent
                 isCollapsed={false}

@@ -5,6 +5,7 @@ import { toTypingInfo, useChatStore } from '../stores/chatStore';
 import { SIDEBAR_TABS, useUiStore } from '../stores/uiStore';
 import useChatSocket from '../hooks/useChatSocket';
 import useSendMessage from '../hooks/useSendMessage';
+import { useAutoReadActiveConversation } from '../hooks/useNotifications';
 import {
   useActiveConversation,
   useContactsById,
@@ -35,13 +36,17 @@ function filterMessages(messages, searchText) {
   });
 }
 
-function getConnectionStatusText(connectionStatus) {
+/**
+ * Pesan status koneksi di atas kotak input.
+ * tone "warning" (kuning) saat menghubungkan, "danger" (merah) saat terputus.
+ */
+function getConnectionNotice(connectionStatus) {
   if (connectionStatus === 'connecting') {
-    return 'Connecting to the server...';
+    return { text: 'Connecting to the server...', tone: 'warning' };
   }
 
   if (connectionStatus === 'disconnected' || connectionStatus === 'error') {
-    return 'You are offline. Reconnecting...';
+    return { text: 'You are offline. Reconnecting...', tone: 'danger' };
   }
 
   return null;
@@ -72,6 +77,7 @@ function useNewChatShortcut(onNewChat) {
 
 export default function ChatPage() {
   useChatSocket();
+  useAutoReadActiveConversation();
 
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
@@ -158,7 +164,7 @@ export default function ChatPage() {
     <div className="flex h-full overflow-hidden">
       <Sidebar onLogout={handleLogout} />
 
-      <main className="chat-background flex min-w-0 flex-1 flex-col">
+      <main className="flex min-w-0 flex-1 flex-col bg-slate-50 dark:bg-navy-950">
         <ChatHeader
           hasConversation={Boolean(activeConversation)}
           title={title}
@@ -199,7 +205,7 @@ export default function ChatPage() {
               conversationId={activeConversation.id}
               placeholder={inputPlaceholder}
               disabled={connectionStatus !== 'connected'}
-              statusText={getConnectionStatusText(connectionStatus)}
+              connectionNotice={getConnectionNotice(connectionStatus)}
               onSend={messageSender.sendMessage}
               onTyping={messageSender.notifyTyping}
             />

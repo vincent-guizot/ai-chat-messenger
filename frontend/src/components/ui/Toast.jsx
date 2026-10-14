@@ -1,23 +1,37 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { CircleAlert } from 'lucide-react';
+import { CircleAlert, CircleCheck, Info, TriangleAlert } from 'lucide-react';
 import { useChatStore } from '../../stores/chatStore';
+import { cn } from '../../lib/cn';
+
+// Ikon & warna aksen untuk setiap jenis toast.
+const TOAST_STYLES = {
+  info: { icon: Info, accentClass: 'text-info', barClass: 'bg-info' },
+  success: { icon: CircleCheck, accentClass: 'text-success', barClass: 'bg-success' },
+  warning: { icon: TriangleAlert, accentClass: 'text-warning', barClass: 'bg-warning' },
+  error: { icon: CircleAlert, accentClass: 'text-danger', barClass: 'bg-danger' },
+};
 
 export default function Toast() {
   const toastMessage = useChatStore((state) => state.toastMessage);
+  const toastVariant = useChatStore((state) => state.toastVariant);
+
+  const style = TOAST_STYLES[toastVariant] || TOAST_STYLES.info;
+  const Icon = style.icon;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[60] flex justify-center px-4">
+    <div className="pointer-events-none fixed inset-x-4 top-16 z-[60] flex justify-end sm:left-auto">
       <AnimatePresence>
         {toastMessage && (
           <motion.div
             role="status"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 16 }}
-            className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-card dark:border-white/10 dark:bg-navy-800 dark:text-slate-100"
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 16 }}
+            className="pointer-events-auto flex max-w-sm items-center gap-2.5 overflow-hidden rounded-lg border border-slate-200 bg-white py-2.5 pl-3 pr-4 text-sm text-slate-700 shadow-popover dark:border-navy-700 dark:bg-navy-900 dark:text-slate-100"
           >
-            <CircleAlert className="h-4 w-4 text-brand-500" aria-hidden="true" />
-            {toastMessage}
+            <span className={cn('h-5 w-1 shrink-0 rounded-full', style.barClass)} aria-hidden="true" />
+            <Icon className={cn('h-4 w-4 shrink-0', style.accentClass)} aria-hidden="true" />
+            <span>{toastMessage}</span>
           </motion.div>
         )}
       </AnimatePresence>

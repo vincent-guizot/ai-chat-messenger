@@ -20,6 +20,7 @@ export const useChatStore = create((set, get) => {
     connectionStatus: 'disconnected',
     typingByConversation: {},
     toastMessage: null,
+    toastVariant: 'info',
 
     setActiveConversationId: (conversationId) => {
       set({ activeConversationId: conversationId });
@@ -58,8 +59,11 @@ export const useChatStore = create((set, get) => {
       });
     },
 
-    showToast: (message) => {
-      set({ toastMessage: message });
+    /**
+     * variant: "info" | "success" | "warning" | "error"
+     */
+    showToast: (message, variant) => {
+      set({ toastMessage: message, toastVariant: variant || 'info' });
 
       window.setTimeout(() => {
         if (get().toastMessage === message) {

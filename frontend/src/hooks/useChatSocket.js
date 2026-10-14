@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import socket from '../lib/socket';
 import { queryKeys } from '../lib/queryClient';
 import ChatCache from '../lib/chatCache';
+import NotificationCache from '../lib/notificationCache';
 import { useAuthStore } from '../stores/authStore';
 import { useChatStore } from '../stores/chatStore';
 
@@ -38,6 +39,7 @@ export default function useChatSocket() {
       // Data bisa saja tertinggal selama koneksi terputus, jadi muat ulang.
       queryClient.invalidateQueries({ queryKey: queryKeys.contacts });
       queryClient.invalidateQueries({ queryKey: queryKeys.conversations });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications });
     }
 
     function handleDisconnect() {
@@ -54,7 +56,7 @@ export default function useChatSocket() {
         errorText = payload.message;
       }
 
-      chatStore.showToast(errorText);
+      chatStore.showToast(errorText, 'error');
     }
 
     function handleNewMessage(message) {
@@ -104,6 +106,19 @@ export default function useChatSocket() {
       ChatCache.updateContactPresence(queryClient, presence);
     }
 
+    function handleNewNotification(notification) {
+      NotificationCache.add(queryClient, notification);
+
+      // Notifikasi dari percakapan yang sedang dibuka tidak perlu ditampilkan sebagai toast
+      // (akan otomatis ditandai sudah dibaca oleh useAutoReadActiveConversation).
+      const activeConversationId = useChatStore.getState().activeConversationId;
+      const isFromActiveConversation = notification.conversationId === activeConversationId;
+
+      if (!isFromActiveConversation) {
+        useChatStore.getState().showToast(notification.title, 'info');
+      }
+    }
+
     socket.auth = { token: token };
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
@@ -113,6 +128,7 @@ export default function useChatSocket() {
     socket.on('typing', handleTyping);
     socket.on('assistant:typing', handleAssistantTyping);
     socket.on('presence:update', handlePresenceUpdate);
+    socket.on('notification:new', handleNewNotification);
 
     chatStore.setConnectionStatus('connecting');
     socket.connect();
@@ -126,6 +142,7 @@ export default function useChatSocket() {
       socket.off('typing', handleTyping);
       socket.off('assistant:typing', handleAssistantTyping);
       socket.off('presence:update', handlePresenceUpdate);
+      socket.off('notification:new', handleNewNotification);
       socket.disconnect();
 
       for (const timerKey of Object.keys(typingTimers)) {

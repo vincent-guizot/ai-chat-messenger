@@ -13,7 +13,7 @@
     "predev": "npm run db:prepare",
     "dev": "nodemon src/server.js",
     "db:create": "node scripts/create-database.js",
-    "db:migrate": "prisma migrate deploy",
+    "db:migrate": "node scripts/check-migrations.js && prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:status": "prisma migrate status",
     "db:seed": "prisma db seed",

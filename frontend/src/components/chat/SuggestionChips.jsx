@@ -14,7 +14,7 @@ export default function SuggestionChips(props) {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
-      className="flex flex-wrap justify-center gap-2.5 pl-0 sm:pl-15"
+      className="flex flex-wrap gap-2 pl-10.5"
     >
       {props.suggestions.map((suggestion) => (
         <Button key={suggestion} variant="soft" size="pill" onClick={() => props.onSelect(suggestion)}>

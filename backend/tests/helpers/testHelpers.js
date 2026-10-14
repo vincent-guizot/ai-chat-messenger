@@ -7,6 +7,7 @@ class TestHelpers {
    * Mengosongkan semua tabel (urutan penting karena foreign key).
    */
   static async resetDatabase() {
+    await prisma.notification.deleteMany();
     await prisma.message.deleteMany();
     await prisma.participant.deleteMany();
     await prisma.conversation.deleteMany();

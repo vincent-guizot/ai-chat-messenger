@@ -89,7 +89,7 @@ export function useCreateAiConversation() {
       openConversation(conversation.id);
     },
     onError: (error) => {
-      showToast(error.message || 'Failed to create AI chat');
+      showToast(error.message || 'Failed to create AI chat', 'error');
     },
   });
 }
@@ -118,7 +118,7 @@ export function useOpenDirectConversation() {
       openConversation(conversation.id);
     },
     onError: (error) => {
-      showToast(error.message || 'Failed to open chat');
+      showToast(error.message || 'Failed to open chat', 'error');
     },
   });
 }

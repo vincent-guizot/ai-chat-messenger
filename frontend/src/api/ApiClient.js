@@ -49,6 +49,10 @@ class ApiClient {
   static post(path, body, token) {
     return ApiClient.request(path, { method: 'POST', body: body, token: token });
   }
+
+  static patch(path, body, token) {
+    return ApiClient.request(path, { method: 'PATCH', body: body, token: token });
+  }
 }
 
 export default ApiClient;

@@ -4,6 +4,7 @@ const MessageService = require('../services/MessageService');
 const AssistantService = require('../services/AssistantService');
 const PresenceService = require('../services/PresenceService');
 const UserService = require('../services/UserService');
+const NotificationService = require('../services/NotificationService');
 
 /**
  * Event Socket.IO yang didukung:
@@ -19,6 +20,7 @@ const UserService = require('../services/UserService');
  *     "typing"            { conversationId, userId, isTyping }
  *     "assistant:typing"  { conversationId, isTyping }
  *     "presence:update"   { userId, online, lastSeenAt }
+ *     "notification:new"  notifikasi baru (hanya ke penerimanya)
  *     "error"             { message }
  *
  * Setiap socket yang login otomatis masuk ke room pribadi "user:<id>",
@@ -153,11 +155,32 @@ class ChatSocket {
    */
   static async conversationAudience(conversationId) {
     const participantIds = await ConversationService.findHumanParticipantIds(conversationId);
+    return ChatSocket.roomsFor(conversationId, participantIds);
+  }
+
+  static roomsFor(conversationId, participantIds) {
     const rooms = participantIds.map(ChatSocket.userRoom);
-
     rooms.push(conversationId);
-
     return rooms;
+  }
+
+  // --- Notifikasi ------------------------------------------------------------
+
+  /**
+   * Membuat notifikasi untuk penerima pesan lalu mengirimkannya ke room pribadi masing-masing.
+   * Kegagalan notifikasi tidak boleh membatalkan pengiriman pesan, jadi error hanya dicatat.
+   */
+  static async notifyRecipients(io, message, participantIds) {
+    try {
+      const sender = await UserService.findById(message.senderId);
+      const notifications = await NotificationService.createForNewMessage(message, sender, participantIds);
+
+      for (const notification of notifications) {
+        io.to(ChatSocket.userRoom(notification.userId)).emit('notification:new', notification);
+      }
+    } catch (error) {
+      console.error('failed to create notifications', error.message);
+    }
   }
 
   // --- Typing ----------------------------------------------------------------
@@ -210,12 +233,14 @@ class ChatSocket {
         return;
       }
 
-      const audience = await ChatSocket.conversationAudience(conversationId);
+      const participantIds = await ConversationService.findHumanParticipantIds(conversationId);
+      const audience = ChatSocket.roomsFor(conversationId, participantIds);
 
       const userMessage = await MessageService.createUserMessage(conversationId, socket.user.id, content);
       await ConversationService.touch(conversationId);
       io.to(audience).emit('message:new', userMessage);
 
+      await ChatSocket.notifyRecipients(io, userMessage, participantIds);
       await ChatSocket.replyWithAssistant(io, audience, conversationId);
     } catch (error) {
       console.error('message:create error', error);

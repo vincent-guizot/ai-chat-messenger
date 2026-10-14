@@ -38,13 +38,13 @@ export default function UserFooter(props) {
   ];
 
   return (
-    <div className={cn('flex items-center gap-3 border-t border-white/10 pt-4', props.isCollapsed && 'flex-col')}>
-      <Avatar name={userName} size="md" status="online" statusRingClassName="ring-navy-800" />
+    <div className={cn('flex items-center gap-2.5 border-t border-navy-800 px-1 pt-3', props.isCollapsed && 'flex-col')}>
+      <Avatar name={userName} size="md" status="online" statusRingClassName="ring-navy-900" />
 
       {!props.isCollapsed && (
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[15px] font-semibold text-white">{userName}</div>
-          <div className="truncate text-sm text-slate-300/80">{getHandle(userEmail)}</div>
+          <div className="truncate text-sm font-medium text-white">{userName}</div>
+          <div className="truncate text-xs text-slate-400">{getHandle(userEmail)}</div>
         </div>
       )}
 
@@ -53,8 +53,8 @@ export default function UserFooter(props) {
         placement="top"
         items={menuItems}
         trigger={(isOpen, toggle) => (
-          <IconButton variant="sidebar" label="Settings" onClick={toggle} aria-expanded={isOpen}>
-            <Settings className="h-5 w-5" />
+          <IconButton variant="sidebar" size="sm" label="Settings" onClick={toggle} aria-expanded={isOpen}>
+            <Settings className="h-4 w-4" />
           </IconButton>
         )}
       />

@@ -8,6 +8,7 @@ import AuthApi from '../api/AuthApi';
 import { useAuthStore } from '../stores/authStore';
 import AuthLayout from '../layouts/AuthLayout';
 import AppLogo from '../components/ui/AppLogo';
+import BrandName from '../components/ui/BrandName';
 import Button from '../components/ui/Button';
 import TextField from '../components/ui/TextField';
 import { cn } from '../lib/cn';
@@ -193,10 +194,7 @@ export default function LoginPage() {
         {/* Brand: logo + nama satu baris agar hemat tinggi */}
         <div className="flex items-center justify-center gap-2.5">
           <AppLogo size="md" />
-          <div className="text-left">
-            <p className="text-lg font-bold leading-none tracking-tight text-ink short:text-base">Chibi Room</p>
-            <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted short:hidden">AI + Real-time Messaging</p>
-          </div>
+          <BrandName />
         </div>
 
         <motion.div

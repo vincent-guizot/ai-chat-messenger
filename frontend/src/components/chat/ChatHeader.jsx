@@ -1,4 +1,4 @@
-import { EllipsisVertical, LogOut, Menu, Moon, Search, SquarePen, Sun, X } from 'lucide-react';
+import { EllipsisVertical, LogOut, Menu, Moon, Search, SquarePen, Sun, Trash2, X } from 'lucide-react';
 import { useUiStore } from '../../stores/uiStore';
 import { formatLastSeen } from '../../utils/formatters';
 import { cn } from '../../lib/cn';
@@ -17,7 +17,7 @@ import NotificationBell from '../notifications/NotificationBell';
  */
 function getStatus(props) {
   if (props.isTyping && props.isAssistant) {
-    return { text: 'Thinking...', dotClass: 'bg-ai-600', textClass: 'text-ai-600 dark:text-ai-300' };
+    return { text: 'Thinking...', dotClass: 'bg-warning', textClass: 'text-amber-600 dark:text-warning' };
   }
 
   if (props.isTyping) {
@@ -41,8 +41,8 @@ function getStatus(props) {
 
 function MessageSearchField(props) {
   return (
-    <label className="hidden h-11 w-full max-w-72 items-center gap-2.5 rounded-md border border-line bg-canvas px-3.5 transition-colors focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-500/15 md:flex">
-      <Search className="h-5 w-5 shrink-0 text-ink-muted" aria-hidden="true" />
+    <label className="hidden h-10 w-full max-w-64 items-center gap-2 rounded-md border border-line bg-canvas px-3 transition-colors focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-500/15 md:flex">
+      <Search className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden="true" />
       <input
         value={props.value}
         onChange={(event) => props.onChange(event.target.value)}
@@ -86,24 +86,27 @@ export default function ChatHeader(props) {
     otherUserName = props.otherUser.name;
   }
 
-  const menuItems = [
-    { label: 'New AI chat', icon: SquarePen, onSelect: props.onNewChat },
-    { label: 'Log out', icon: LogOut, onSelect: props.onLogout, danger: true },
-  ];
+  const menuItems = [{ label: 'New AI chat', icon: SquarePen, onSelect: props.onNewChat }];
+
+  if (props.hasConversation) {
+    menuItems.push({ label: 'Delete chat', icon: Trash2, onSelect: props.onDeleteChat, danger: true });
+  }
+
+  menuItems.push({ label: 'Log out', icon: LogOut, onSelect: props.onLogout, danger: true });
 
   return (
-    <header className="flex h-[76px] shrink-0 items-center gap-3 border-b border-line bg-surface px-4 sm:px-6">
+    <header className="flex h-16 shrink-0 items-center gap-3 border-b border-line bg-surface px-4">
       <IconButton variant="ghost" size="md" label="Open menu" className="lg:hidden" onClick={() => setMobileSidebarOpen(true)}>
-        <Menu className="h-5 w-5" />
+        <Menu className="h-[18px] w-[18px]" />
       </IconButton>
 
       {props.hasConversation && (
         <>
-          <Avatar isAssistant={props.isAssistant} name={otherUserName} size="lg" />
+          <Avatar isAssistant={props.isAssistant} name={otherUserName} size="md" />
 
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-lg font-semibold leading-tight text-ink">{props.title}</h1>
-            <p className={cn('flex items-center gap-1.5 text-sm', status.textClass)}>
+            <h1 className="truncate text-base font-semibold leading-tight text-ink">{props.title}</h1>
+            <p className={cn('flex items-center gap-1.5 text-xs', status.textClass)}>
               {status.dotClass && <span className={cn('h-2 w-2 shrink-0 rounded-full', status.dotClass)} aria-hidden="true" />}
               <span className="truncate">{status.text}</span>
             </p>
@@ -117,15 +120,15 @@ export default function ChatHeader(props) {
 
       <NotificationBell />
 
-      <IconButton variant="card" size="md" label={themeLabel} onClick={toggleTheme} className="hidden sm:inline-flex">
-        <ThemeIcon className="h-5 w-5" />
+      <IconButton variant="card" size="md" label={themeLabel} onClick={toggleTheme}>
+        <ThemeIcon className="h-[18px] w-[18px]" />
       </IconButton>
 
       <DropdownMenu
         items={menuItems}
         trigger={(isOpen, toggle) => (
           <IconButton variant="card" size="md" label="More options" onClick={toggle} aria-expanded={isOpen}>
-            <EllipsisVertical className="h-5 w-5" />
+            <EllipsisVertical className="h-[18px] w-[18px]" />
           </IconButton>
         )}
       />

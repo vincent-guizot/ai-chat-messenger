@@ -95,6 +95,55 @@ class ChatCache {
     return true;
   }
 
+  /**
+   * Membuang satu pesan dari daftar pesan, lalu memperbarui pratinjau "pesan terakhir" di sidebar.
+   * Mengembalikan false jika daftar pesan percakapan itu belum pernah dimuat (perlu ambil ulang).
+   */
+  static removeMessage(queryClient, conversationId, messageId) {
+    const messages = queryClient.getQueryData(queryKeys.messages(conversationId));
+    const conversations = queryClient.getQueryData(queryKeys.conversations);
+
+    if (messages) {
+      const remainingMessages = messages.filter((message) => message.id !== messageId);
+      queryClient.setQueryData(queryKeys.messages(conversationId), remainingMessages);
+
+      if (conversations) {
+        const lastMessage = remainingMessages[remainingMessages.length - 1];
+        let lastMessages = [];
+        if (lastMessage) {
+          lastMessages = [lastMessage];
+        }
+
+        queryClient.setQueryData(
+          queryKeys.conversations,
+          conversations.map((conversation) => {
+            if (conversation.id !== conversationId) {
+              return conversation;
+            }
+
+            return { ...conversation, messages: lastMessages };
+          }),
+        );
+      }
+
+      return true;
+    }
+
+    return false;
+  }
+
+  static removeConversation(queryClient, conversationId) {
+    queryClient.setQueryData(queryKeys.conversations, (previousConversations) => {
+      if (!previousConversations) {
+        return previousConversations;
+      }
+
+      return previousConversations.filter((item) => item.id !== conversationId);
+    });
+
+    queryClient.removeQueries({ queryKey: queryKeys.messages(conversationId) });
+  }
+
   static addConversation(queryClient, conversation) {
     queryClient.setQueryData(queryKeys.conversations, (previousConversations) => {
       const list = previousConversations || [];

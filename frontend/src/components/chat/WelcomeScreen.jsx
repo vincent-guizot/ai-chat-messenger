@@ -15,8 +15,8 @@ export default function WelcomeScreen(props) {
         className="flex max-w-md flex-col items-center text-center"
       >
         <AppLogo size="lg" />
-        <h2 className="mt-6 text-2xl font-semibold text-ink">Chat with AI, and connect with people</h2>
-        <p className="mt-2 text-base leading-relaxed text-ink-muted">
+        <h2 className="mt-5 text-xl font-semibold text-ink">Chat with AI, and connect with people</h2>
+        <p className="mt-2 text-sm leading-relaxed text-ink-muted">
           Get instant answers from the AI Assistant, or start a direct conversation with anyone who is online.
         </p>
 

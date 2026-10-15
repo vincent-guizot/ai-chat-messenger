@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronsLeft, ChevronsRight, Plus, SquarePen, X } from 'lucide-react';
 import { cn } from '../../lib/cn';
@@ -9,6 +9,7 @@ import {
   useContactsQuery,
   useConversationsQuery,
   useCreateAiConversation,
+  useDeleteConversation,
   useOpenConversation,
   useOpenDirectConversation,
 } from '../../hooks/useChatData';
@@ -16,13 +17,15 @@ import { useUnreadCountByConversation } from '../../hooks/useNotifications';
 import { isAssistantConversation, isDirectConversation } from '../../utils/conversations';
 import useMinuteTick from '../../hooks/useMinuteTick';
 import AppLogo from '../ui/AppLogo';
+import BrandName from '../ui/BrandName';
+import ConfirmDialog from '../ui/ConfirmDialog';
 import IconButton from '../ui/IconButton';
 import SidebarNav from './SidebarNav';
 import UserFooter from './UserFooter';
 import { AssistantConversationList, ContactList, DirectConversationList } from './SidebarLists';
 
-const EXPANDED_WIDTH = 312;
-const COLLAPSED_WIDTH = 84;
+const EXPANDED_WIDTH = 288;
+const COLLAPSED_WIDTH = 72;
 const EMPTY_LIST = [];
 
 const SECTION_TITLES = {
@@ -75,6 +78,10 @@ function SidebarContent(props) {
   const openConversation = useOpenConversation();
   const createAiConversation = useCreateAiConversation();
   const openDirectConversation = useOpenDirectConversation();
+  const deleteConversation = useDeleteConversation();
+
+  // Percakapan yang sedang menunggu konfirmasi hapus.
+  const [conversationToDelete, setConversationToDelete] = useState(null);
 
   const conversations = conversationsQuery.data || EMPTY_LIST;
   const contacts = contactsQuery.data || EMPTY_LIST;
@@ -104,21 +111,29 @@ function SidebarContent(props) {
     }
   }
 
+  function confirmDeleteConversation() {
+    if (!conversationToDelete) {
+      return;
+    }
+
+    deleteConversation.mutate(conversationToDelete.id, {
+      onSettled: () => setConversationToDelete(null),
+    });
+  }
+
+  let deleteTitle = '';
+  if (conversationToDelete) {
+    deleteTitle = conversationToDelete.title;
+  }
+
   return (
-    <div className="relative flex h-full flex-col gap-4 overflow-hidden border-r border-line bg-surface px-4 py-5 text-ink shadow-sm">
+    <div className="relative flex h-full flex-col gap-3 overflow-hidden rounded-xl border border-line bg-surface px-3 py-4 text-ink shadow-card">
       <SidebarDecoration />
 
       {/* Logo & tombol ciutkan */}
       <div className={cn('relative flex items-center gap-3', isCollapsed && 'flex-col')}>
-        <AppLogo />
-        {!isCollapsed && (
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-2xl font-bold leading-none tracking-tight text-ink">Chibi Room</div>
-            <div className="mt-1 truncate text-[9px] font-medium uppercase tracking-[0.08em] text-ink-muted">
-              AI + Real-time Messaging
-            </div>
-          </div>
-        )}
+        <AppLogo size={isCollapsed ? 'sm' : 'md'} />
+        {!isCollapsed && <BrandName className="flex-1" />}
 
         {props.onClose && (
           <IconButton variant="sidebar" size="sm" label="Close menu" onClick={props.onClose}>
@@ -140,15 +155,15 @@ function SidebarContent(props) {
         disabled={createAiConversation.isPending}
         title="New Chat (Alt + N)"
         className={cn(
-          'relative flex h-12 items-center gap-3 rounded-md bg-brand-600 px-4 text-base font-semibold text-white shadow-md transition-colors',
+          'relative flex h-11 items-center gap-3 rounded-md bg-brand-600 px-4 text-base font-semibold text-white shadow-md transition-colors',
           'hover:bg-brand-700 disabled:opacity-70',
           isCollapsed && 'justify-center px-0',
         )}
       >
-        <SquarePen className="h-5 w-5 shrink-0" aria-hidden="true" />
+        <SquarePen className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
         {!isCollapsed && <span className="flex-1 text-left">New Chat</span>}
         {!isCollapsed && (
-          <kbd className="rounded-sm bg-white/15 px-2 py-1 font-sans text-xs font-medium text-white">
+          <kbd className="rounded-sm bg-white/20 px-1.5 py-0.5 font-sans text-xs font-medium text-white">
             Alt N
           </kbd>
         )}
@@ -194,6 +209,7 @@ function SidebarContent(props) {
               activeConversationId={activeConversationId}
               isCollapsed={isCollapsed}
               onOpen={openConversation}
+              onDelete={setConversationToDelete}
             />
           )}
 
@@ -206,6 +222,7 @@ function SidebarContent(props) {
               activeConversationId={activeConversationId}
               isCollapsed={isCollapsed}
               onOpen={openConversation}
+              onDelete={setConversationToDelete}
             />
           )}
 
@@ -223,6 +240,16 @@ function SidebarContent(props) {
       <div className="relative">
         <UserFooter isCollapsed={isCollapsed} onLogout={props.onLogout} />
       </div>
+
+      <ConfirmDialog
+        isOpen={Boolean(conversationToDelete)}
+        title="Delete this chat?"
+        description={`“${deleteTitle}” will be removed from your chats. This can't be undone.`}
+        confirmLabel="Delete chat"
+        isLoading={deleteConversation.isPending}
+        onConfirm={confirmDeleteConversation}
+        onCancel={() => setConversationToDelete(null)}
+      />
     </div>
   );
 }
@@ -261,7 +288,7 @@ export default function Sidebar(props) {
               onClick={() => setMobileSidebarOpen(false)}
             />
             <motion.aside
-              className="absolute inset-y-0 left-0 w-[min(300px,88vw)]"
+              className="absolute inset-y-0 left-0 w-[min(300px,88vw)] p-2"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}

@@ -10,5 +10,7 @@ router.get('/', ConversationController.index);
 router.post('/', ConversationController.store);
 router.post('/direct', ConversationController.direct);
 router.get('/:id/messages', ConversationController.messages);
+router.delete('/:id/messages/:messageId', ConversationController.destroyMessage);
+router.delete('/:id', ConversationController.destroy);
 
 module.exports = router;

@@ -138,6 +138,22 @@ class ConversationService {
     });
   }
 
+  /**
+   * Menghapus percakapan beserta semua pesan & notifikasinya (cascade di database).
+   */
+  static async deleteConversation(conversationId) {
+    await prisma.conversation.delete({ where: { id: conversationId } });
+  }
+
+  /**
+   * Mengeluarkan satu user dari percakapan (dipakai untuk "hapus chat" di DM).
+   */
+  static async removeParticipant(conversationId, userId) {
+    await prisma.participant.deleteMany({
+      where: { conversationId: conversationId, userId: userId },
+    });
+  }
+
   static async isParticipant(conversationId, userId) {
     const participant = await prisma.participant.findFirst({
       where: {

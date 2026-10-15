@@ -91,6 +91,15 @@ class NotificationService {
    * Menandai satu notifikasi sebagai sudah dibaca.
    * Mengembalikan null jika notifikasi tidak ditemukan / bukan milik user.
    */
+  /**
+   * Menghapus notifikasi yang dibuat oleh sebuah pesan (dipakai saat pesan dihapus).
+   */
+  static async deleteForMessage(messageId) {
+    return prisma.notification.deleteMany({
+      where: { data: { path: ['messageId'], equals: messageId } },
+    });
+  }
+
   static async markAsRead(notificationId, userId) {
     const notification = await prisma.notification.findFirst({
       where: {

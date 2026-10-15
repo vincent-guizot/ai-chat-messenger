@@ -74,6 +74,25 @@ export default function useChatSocket() {
       }
     }
 
+    function handleMessageDeleted(payload) {
+      const wasLoaded = ChatCache.removeMessage(queryClient, payload.conversationId, payload.messageId);
+
+      if (!wasLoaded) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.conversations });
+      }
+
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications });
+    }
+
+    function handleConversationDeleted(payload) {
+      ChatCache.removeConversation(queryClient, payload.conversationId);
+
+      const chatState = useChatStore.getState();
+      if (chatState.activeConversationId === payload.conversationId) {
+        chatState.setActiveConversationId(null);
+      }
+    }
+
     function clearUserTyping(conversationId, userId) {
       const timerKey = `${conversationId}:${userId}`;
 
@@ -125,6 +144,8 @@ export default function useChatSocket() {
     socket.on('connect_error', handleConnectError);
     socket.on('error', handleServerError);
     socket.on('message:new', handleNewMessage);
+    socket.on('message:deleted', handleMessageDeleted);
+    socket.on('conversation:deleted', handleConversationDeleted);
     socket.on('typing', handleTyping);
     socket.on('assistant:typing', handleAssistantTyping);
     socket.on('presence:update', handlePresenceUpdate);
@@ -139,6 +160,8 @@ export default function useChatSocket() {
       socket.off('connect_error', handleConnectError);
       socket.off('error', handleServerError);
       socket.off('message:new', handleNewMessage);
+      socket.off('message:deleted', handleMessageDeleted);
+      socket.off('conversation:deleted', handleConversationDeleted);
       socket.off('typing', handleTyping);
       socket.off('assistant:typing', handleAssistantTyping);
       socket.off('presence:update', handlePresenceUpdate);

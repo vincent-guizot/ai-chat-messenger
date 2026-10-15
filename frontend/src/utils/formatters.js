@@ -82,12 +82,12 @@ export function formatLastSeen(lastSeenAt) {
   return `Last seen ${Math.floor(elapsedMs / DAY_MS)}d ago`;
 }
 
-// Warna solid avatar: variasi biru & navy, ditambah beberapa warna aksen yang lembut.
+// Warna solid avatar: variasi biru & navy, ditambah aksen hijau, kuning, dan merah.
 const AVATAR_COLORS = [
   'bg-brand-600',
   'bg-navy-600',
   'bg-sky-600',
-  'bg-indigo-600',
+  'bg-brand-800',
   'bg-emerald-600',
   'bg-amber-600',
   'bg-rose-600',

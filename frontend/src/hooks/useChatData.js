@@ -122,3 +122,50 @@ export function useOpenDirectConversation() {
     },
   });
 }
+
+/**
+ * Menghapus satu pesan. Tampilan diperbarui lewat event socket "message:deleted"
+ * (juga untuk tab/perangkat lain), tapi cache langsung dibersihkan agar terasa instan.
+ */
+export function useDeleteMessage() {
+  const token = useAuthStore((state) => state.token);
+  const queryClient = useQueryClient();
+  const showToast = useChatStore((state) => state.showToast);
+
+  return useMutation({
+    mutationFn: (variables) => ConversationApi.deleteMessage(variables.conversationId, variables.messageId, token),
+    onSuccess: (data, variables) => {
+      ChatCache.removeMessage(queryClient, variables.conversationId, variables.messageId);
+      showToast('Message deleted', 'success');
+    },
+    onError: (error) => {
+      showToast(error.message || 'Failed to delete message', 'error');
+    },
+  });
+}
+
+/**
+ * Menghapus percakapan. Jika yang dihapus sedang dibuka, tampilan kembali ke layar sambutan.
+ */
+export function useDeleteConversation() {
+  const token = useAuthStore((state) => state.token);
+  const queryClient = useQueryClient();
+  const showToast = useChatStore((state) => state.showToast);
+  const setActiveConversationId = useChatStore((state) => state.setActiveConversationId);
+
+  return useMutation({
+    mutationFn: (conversationId) => ConversationApi.deleteConversation(conversationId, token),
+    onSuccess: (data, conversationId) => {
+      ChatCache.removeConversation(queryClient, conversationId);
+
+      if (useChatStore.getState().activeConversationId === conversationId) {
+        setActiveConversationId(null);
+      }
+
+      showToast('Chat deleted', 'success');
+    },
+    onError: (error) => {
+      showToast(error.message || 'Failed to delete chat', 'error');
+    },
+  });
+}

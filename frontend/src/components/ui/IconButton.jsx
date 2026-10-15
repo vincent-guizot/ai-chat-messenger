@@ -17,11 +17,11 @@ const iconButtonVariants = cva(
         // Tombol netral berlatar (tombol "+")
         muted: 'rounded-md border border-line bg-canvas text-ink-muted hover:border-brand-300 hover:text-brand-600',
       },
-      // Ukuran sentuh minimum 44px (sm 40px hanya untuk aksi sekunder yang rapat).
+      // Ukuran tombol (rem, root 14px): sm 28px, md 35px, lg 38px — untuk aksi sekunder yang rapat.
       size: {
-        sm: 'h-10 w-10',
-        md: 'h-11 w-11',
-        lg: 'h-12 w-12',
+        sm: 'h-8 w-8',
+        md: 'h-10 w-10',
+        lg: 'h-11 w-11',
       },
     },
     defaultVariants: {

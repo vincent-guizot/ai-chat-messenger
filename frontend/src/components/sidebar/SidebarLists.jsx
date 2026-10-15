@@ -79,7 +79,7 @@ function AssistantConversationItem(props) {
 
   if (typingInfo.assistant) {
     subtitle = 'Thinking...';
-    subtitleClassName = 'font-medium text-ai-600 dark:text-ai-300';
+    subtitleClassName = 'font-medium text-warning';
   } else if (lastMessage) {
     subtitle = truncate(lastMessage.content, 40);
   }
@@ -99,6 +99,7 @@ function AssistantConversationItem(props) {
       isActive={props.isActive}
       isCollapsed={props.isCollapsed}
       onClick={() => props.onOpen(conversation.id)}
+      onDelete={() => props.onDelete({ id: conversation.id, title: getConversationTitle(conversation, null) })}
     />
   );
 }
@@ -119,6 +120,7 @@ export function AssistantConversationList(props) {
       isActive={conversation.id === props.activeConversationId}
       isCollapsed={props.isCollapsed}
       onOpen={props.onOpen}
+      onDelete={props.onDelete}
     />
   ));
 }
@@ -179,6 +181,7 @@ function DirectConversationItem(props) {
       isActive={props.isActive}
       isCollapsed={props.isCollapsed}
       onClick={() => props.onOpen(conversation.id)}
+      onDelete={() => props.onDelete({ id: conversation.id, title: getConversationTitle(conversation, otherUser) })}
     />
   );
 }
@@ -201,6 +204,7 @@ export function DirectConversationList(props) {
       isActive={conversation.id === props.activeConversationId}
       isCollapsed={props.isCollapsed}
       onOpen={props.onOpen}
+      onDelete={props.onDelete}
     />
   ));
 }

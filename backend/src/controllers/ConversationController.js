@@ -2,6 +2,8 @@ const ConversationService = require('../services/ConversationService');
 const MessageService = require('../services/MessageService');
 const UserService = require('../services/UserService');
 const HttpError = require('../utils/HttpError');
+const ChatSocket = require('../sockets/ChatSocket');
+const NotificationService = require('../services/NotificationService');
 
 class ConversationController {
   /**
@@ -109,6 +111,102 @@ class ConversationController {
       const messages = await MessageService.findAllInConversation(conversationId);
 
       return response.json({ ok: true, messages: messages });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  /**
+   * DELETE /api/conversations/:id/messages/:messageId
+   * Pengirim boleh menghapus pesannya sendiri. Di chat AI, pemilik chat juga boleh
+   * menghapus balasan AI. Semua peserta menerima event "message:deleted".
+   */
+  static async destroyMessage(request, response, next) {
+    try {
+      const conversationId = request.params.id;
+      const messageId = request.params.messageId;
+      const userId = request.user.id;
+
+      const isParticipant = await ConversationService.isParticipant(conversationId, userId);
+
+      if (!isParticipant) {
+        throw HttpError.forbidden('not allowed');
+      }
+
+      const message = await MessageService.findById(messageId);
+
+      if (!message || message.conversationId !== conversationId) {
+        throw HttpError.notFound('message not found');
+      }
+
+      const isOwnMessage = message.senderRole === 'user' && message.senderId === userId;
+      let canDelete = isOwnMessage;
+
+      if (!canDelete && message.senderRole === 'assistant') {
+        const hasAssistant = await ConversationService.hasAssistant(conversationId);
+        canDelete = hasAssistant;
+      }
+
+      if (!canDelete) {
+        throw HttpError.forbidden('you can only delete your own messages');
+      }
+
+      const participantIds = await ConversationService.findHumanParticipantIds(conversationId);
+
+      await MessageService.deleteById(messageId);
+      await NotificationService.deleteForMessage(messageId);
+
+      const io = request.app.get('io');
+      if (io) {
+        io.to(ChatSocket.roomsFor(conversationId, participantIds)).emit('message:deleted', {
+          conversationId: conversationId,
+          messageId: messageId,
+        });
+      }
+
+      return response.json({ ok: true });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  /**
+   * DELETE /api/conversations/:id
+   * Chat AI dihapus total. Pada DM, user hanya keluar dari percakapan (lawan bicara tetap
+   * memiliki riwayatnya); jika tidak ada manusia yang tersisa, percakapan dihapus.
+   */
+  static async destroy(request, response, next) {
+    try {
+      const conversationId = request.params.id;
+      const userId = request.user.id;
+
+      const isParticipant = await ConversationService.isParticipant(conversationId, userId);
+
+      if (!isParticipant) {
+        throw HttpError.forbidden('not allowed');
+      }
+
+      const hasAssistant = await ConversationService.hasAssistant(conversationId);
+      const participantIds = await ConversationService.findHumanParticipantIds(conversationId);
+      const io = request.app.get('io');
+
+      if (hasAssistant || participantIds.length <= 1) {
+        await ConversationService.deleteConversation(conversationId);
+
+        if (io) {
+          io.to(ChatSocket.roomsFor(conversationId, participantIds)).emit('conversation:deleted', {
+            conversationId: conversationId,
+          });
+        }
+      } else {
+        await ConversationService.removeParticipant(conversationId, userId);
+
+        if (io) {
+          io.to(ChatSocket.userRoom(userId)).emit('conversation:deleted', { conversationId: conversationId });
+        }
+      }
+
+      return response.json({ ok: true });
     } catch (error) {
       return next(error);
     }

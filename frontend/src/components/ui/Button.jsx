@@ -14,16 +14,16 @@ export const buttonVariants = cva(
         outline: 'border border-line bg-surface text-ink hover:border-brand-300 hover:bg-tint',
         // Alias lama untuk "outline" (dipakai di beberapa halaman)
         soft: 'border border-line bg-surface text-ink hover:border-brand-300 hover:bg-tint',
-        // Aksen AI (ungu)
+        // Aksen AI (biru lembut)
         ai: 'border border-ai-line bg-ai-soft text-ai-700 hover:border-ai-400 dark:text-ai-300',
         ghost: 'text-ink-muted hover:bg-tint hover:text-ink',
         danger: 'bg-danger text-white hover:bg-danger/90',
       },
       size: {
-        sm: 'h-11 rounded-md px-3 text-sm',
-        md: 'h-12 rounded-md px-5 text-base',
-        lg: 'h-12 rounded-md px-6 text-base',
-        pill: 'h-11 rounded-full px-4 text-sm font-medium',
+        sm: 'h-10 rounded-md px-3.5 text-sm',
+        md: 'h-11 rounded-md px-5 text-base',
+        lg: 'h-11 rounded-md px-6 text-base',
+        pill: 'h-9 rounded-full px-3.5 text-sm font-medium',
       },
       fullWidth: {
         true: 'w-full',

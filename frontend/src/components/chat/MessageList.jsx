@@ -1,8 +1,10 @@
-import { Fragment, useEffect, useRef } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { LoaderCircle, SearchX } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 import { formatDayLabel } from '../../utils/formatters';
+import { useDeleteMessage } from '../../hooks/useChatData';
+import ConfirmDialog from '../ui/ConfirmDialog';
 import MessageBubble, { DELIVERY } from './MessageBubble';
 import TypingBubble from './TypingBubble';
 import SuggestionChips, { ASSISTANT_SUGGESTIONS } from './SuggestionChips';
@@ -61,9 +63,9 @@ function getDeliveryStatus(messages, index) {
 
 function DateSeparator(props) {
   return (
-    <div className="flex items-center gap-4 py-1" role="separator" aria-label={props.label}>
+    <div className="flex items-center gap-4 py-0.5" role="separator" aria-label={props.label}>
       <span className="h-px flex-1 bg-line" />
-      <span className="rounded-full border border-line bg-surface px-4 py-1 text-xs font-medium text-ink-muted shadow-sm">
+      <span className="rounded-full border border-line bg-surface px-3 py-0.5 text-xs font-medium text-ink-muted shadow-sm">
         {props.label}
       </span>
       <span className="h-px flex-1 bg-line" />
@@ -84,6 +86,20 @@ export default function MessageList(props) {
   const bottomRef = useRef(null);
   const messages = props.messages;
   const conversation = props.conversation;
+
+  const deleteMessage = useDeleteMessage();
+  const [messageToDelete, setMessageToDelete] = useState(null);
+
+  function confirmDeleteMessage() {
+    if (!messageToDelete) {
+      return;
+    }
+
+    deleteMessage.mutate(
+      { conversationId: conversation.id, messageId: messageToDelete.id },
+      { onSettled: () => setMessageToDelete(null) },
+    );
+  }
 
   // Scroll ke pesan paling bawah setiap ada pesan baru / indikator mengetik.
   useEffect(() => {
@@ -114,7 +130,7 @@ export default function MessageList(props) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-5 px-4 py-6 sm:px-6">
+    <div className="flex w-full flex-1 flex-col gap-4 px-4 py-5 sm:px-5">
       {messages.length === 0 && isSearching && (
         <CenteredNotice icon={<SearchX className="h-5 w-5" />}>No messages match “{props.searchText}”.</CenteredNotice>
       )}
@@ -145,6 +161,8 @@ export default function MessageList(props) {
               sender={findSender(message, conversation)}
               showAvatar={startsNewDay || !isSameSender(previousMessage, message)}
               deliveryStatus={deliveryStatus}
+              canDelete={isOwn || (props.isAssistant && message.senderRole === 'assistant')}
+              onDelete={setMessageToDelete}
             />
           </Fragment>
         );
@@ -161,6 +179,16 @@ export default function MessageList(props) {
       {showSuggestions && <SuggestionChips suggestions={ASSISTANT_SUGGESTIONS} onSelect={props.onSuggestion} />}
 
       <div ref={bottomRef} />
+
+      <ConfirmDialog
+        isOpen={Boolean(messageToDelete)}
+        title="Delete this message?"
+        description="The message will be removed for everyone in this chat. This can't be undone."
+        confirmLabel="Delete message"
+        isLoading={deleteMessage.isPending}
+        onConfirm={confirmDeleteMessage}
+        onCancel={() => setMessageToDelete(null)}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Check, CheckCheck, CircleAlert, Clock3 } from 'lucide-react';
+import { Check, CheckCheck, CircleAlert, Clock3, Trash2 } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { formatTime } from '../../utils/formatters';
 import { TEMPORARY_ID_PREFIX } from '../../lib/chatCache';
@@ -19,9 +19,9 @@ export const DELIVERY = {
 
 // Setiap status punya ikon DAN teks yang berbeda, jadi tidak hanya mengandalkan warna.
 const DELIVERY_STYLES = {
-  [DELIVERY.sending]: { icon: Clock3, label: 'Sending', className: 'text-ink-muted' },
-  [DELIVERY.sent]: { icon: Check, label: 'Sent', className: 'text-ink-muted' },
-  [DELIVERY.read]: { icon: CheckCheck, label: 'Read', className: 'text-brand-600 dark:text-brand-300' },
+  [DELIVERY.sending]: { icon: Clock3, label: 'Sending', className: 'text-amber-500' },
+  [DELIVERY.sent]: { icon: Check, label: 'Sent', className: 'text-success' },
+  [DELIVERY.read]: { icon: CheckCheck, label: 'Read', className: 'text-brand-500 dark:text-brand-300' },
   [DELIVERY.failed]: { icon: CircleAlert, label: 'Failed to send', className: 'text-danger' },
 };
 
@@ -32,7 +32,7 @@ function DeliveryStatus(props) {
 
   return (
     <span className={cn('inline-flex items-center gap-1', style.className)} title={style.label}>
-      <Icon className="h-4 w-4" aria-hidden="true" />
+      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
       {showText && <span className="text-xs font-medium">{style.label}</span>}
       {!showText && <span className="sr-only">{style.label}</span>}
     </span>
@@ -48,6 +48,8 @@ function DeliveryStatus(props) {
  *   sender          { name, isAssistant } pengirim pesan
  *   showAvatar      false jika pesan sebelumnya dari pengirim yang sama (avatar tidak diulang)
  *   deliveryStatus  "sent" | "read" untuk pesan sendiri yang sudah tersimpan di server
+ *   canDelete       true jika user boleh menghapus pesan ini (tombol hapus muncul saat hover)
+ *   onDelete        dipanggil dengan pesan yang akan dihapus (konfirmasi ditangani induknya)
  */
 export default function MessageBubble(props) {
   const message = props.message;
@@ -76,21 +78,23 @@ export default function MessageBubble(props) {
     deliveryStatus = DELIVERY.sending;
   }
 
+  const canDelete = Boolean(props.canDelete) && !isTemporary;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.18 }}
-      className={cn('flex items-start gap-3', isOwn && 'flex-row-reverse', !props.showAvatar && '-mt-2')}
+      className={cn('group flex items-start gap-2.5', isOwn && 'flex-row-reverse', !props.showAvatar && '-mt-2')}
     >
-      <div className="w-10 shrink-0">
-        {props.showAvatar && <Avatar name={props.sender.name} isAssistant={props.sender.isAssistant} size="md" />}
+      <div className="w-8 shrink-0">
+        {props.showAvatar && <Avatar name={props.sender.name} isAssistant={props.sender.isAssistant} size="sm" />}
       </div>
 
-      <div className={cn('flex min-w-0 max-w-[85%] flex-col sm:max-w-[70%]', isOwn && 'items-end')}>
+      <div className={cn('flex min-w-0 max-w-[85%] flex-col sm:max-w-[72%]', isOwn && 'items-end')}>
         <div
           className={cn(
-            'rounded-lg px-4 py-2.5 text-[15px] leading-relaxed',
+            'rounded-lg px-3.5 py-2 text-base leading-relaxed',
             isOwn && 'rounded-br-sm bg-brand-600 text-white shadow-sm',
             !isOwn && !isAssistant && 'rounded-bl-sm border border-line bg-surface text-ink shadow-sm',
             !isOwn && isAssistant && 'rounded-bl-sm border border-ai-line bg-ai-soft text-ink shadow-sm',
@@ -101,11 +105,27 @@ export default function MessageBubble(props) {
           <MessageContent text={message.content} renderMarkdown={isAssistant} isOwn={isOwn} />
         </div>
 
-        <div className="mt-1.5 flex items-center gap-1.5 px-0.5 text-xs text-ink-muted">
+        <div className="mt-1 flex items-center gap-1.5 px-0.5 text-xs text-ink-muted">
           <span>{formatTime(message.createdAt)}</span>
           {isOwn && <DeliveryStatus status={deliveryStatus} />}
         </div>
       </div>
+
+      {canDelete && (
+        <button
+          type="button"
+          onClick={() => props.onDelete(message)}
+          aria-label="Delete message"
+          title="Delete message"
+          className={cn(
+            'mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-muted transition',
+            'hover:bg-danger/10 hover:text-danger focus-visible:opacity-100',
+            'opacity-0 group-hover:opacity-100 pointer-coarse:opacity-100',
+          )}
+        >
+          <Trash2 className="h-4 w-4" aria-hidden="true" />
+        </button>
+      )}
     </motion.div>
   );
 }

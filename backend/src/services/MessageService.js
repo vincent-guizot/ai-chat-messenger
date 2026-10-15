@@ -21,6 +21,14 @@ class MessageService {
     return newestFirst.reverse();
   }
 
+  static async findById(messageId) {
+    return prisma.message.findUnique({ where: { id: messageId } });
+  }
+
+  static async deleteById(messageId) {
+    return prisma.message.delete({ where: { id: messageId } });
+  }
+
   static async createUserMessage(conversationId, senderId, content) {
     return prisma.message.create({
       data: {

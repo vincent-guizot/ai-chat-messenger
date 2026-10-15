@@ -50,6 +50,10 @@ class ApiClient {
     return ApiClient.request(path, { method: 'POST', body: body, token: token });
   }
 
+  static delete(path, token) {
+    return ApiClient.request(path, { method: 'DELETE', token: token });
+  }
+
   static patch(path, body, token) {
     return ApiClient.request(path, { method: 'PATCH', body: body, token: token });
   }

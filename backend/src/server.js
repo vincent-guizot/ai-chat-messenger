@@ -19,6 +19,8 @@ function createServer() {
   });
 
   ChatSocket.register(io);
+  // Controller REST memakai io yang sama untuk menyiarkan event hapus (request.app.get('io')).
+  app.set('io', io);
 
   return { httpServer: httpServer, io: io };
 }

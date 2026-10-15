@@ -22,6 +22,14 @@ class ConversationApi {
     return data.conversation;
   }
 
+  static async deleteMessage(conversationId, messageId, token) {
+    await ApiClient.delete(`/api/conversations/${conversationId}/messages/${messageId}`, token);
+  }
+
+  static async deleteConversation(conversationId, token) {
+    await ApiClient.delete(`/api/conversations/${conversationId}`, token);
+  }
+
   /**
    * Membuka (atau membuat) percakapan langsung dengan user lain.
    */

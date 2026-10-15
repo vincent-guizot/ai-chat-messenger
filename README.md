@@ -109,6 +109,36 @@ ollama serve
 
 Untuk Hugging Face: set `DEFAULT_PROVIDER=huggingface` dan `HUGGINGFACE_API_TOKEN` di `backend/.env`.
 
+## Menjalankan dengan Docker
+
+Kebutuhan: Docker dengan Docker Compose v2. Tidak perlu Node.js atau PostgreSQL di mesin host.
+
+```bash
+cp .env.example .env            # isi POSTGRES_PASSWORD dan JWT_SECRET (openssl rand -hex 32)
+docker compose up -d --build
+docker compose exec backend npm run db:seed   # opsional: data demo (akun demo di atas)
+```
+
+Buka http://localhost:8080 (ubah lewat `WEB_PORT`).
+
+| Service    | Image / build        | Keterangan                                                                 |
+| ---------- | -------------------- | -------------------------------------------------------------------------- |
+| `db`       | `postgres:16-alpine` | Data disimpan di volume `db-data`; port tidak dibuka ke host               |
+| `backend`  | `backend/Dockerfile` | Saat start: buat database + `prisma migrate deploy`, lalu jalankan server  |
+| `frontend` | `frontend/Dockerfile`| Build Vite disajikan Nginx; `/api` dan `/socket.io` di-proxy ke backend    |
+
+Hanya `frontend` yang dibuka ke host. Karena frontend dan API satu origin, CORS tidak diperlukan
+dan `VITE_API_BASE` dibiarkan kosong.
+
+Catatan:
+
+- `POSTGRES_PASSWORD` dipakai di `DATABASE_URL`, jadi pakai karakter aman untuk URL (huruf, angka, `-`, `_`).
+- AI lokal: default-nya memakai Ollama di mesin host (`OLLAMA_URL=http://host.docker.internal:11434`, jalankan Ollama dengan
+  `OLLAMA_HOST=0.0.0.0`). Atau jalankan Ollama di dalam Docker: `docker compose --profile ollama up -d`,
+  `docker compose exec ollama ollama pull llama3.1`, lalu set `OLLAMA_URL=http://ollama:11434`.
+- Test backend di Docker: `docker compose --profile test run --rm backend-test`.
+- Perintah berguna: `docker compose logs -f backend`, `docker compose down` (data tetap), `docker compose down -v` (hapus data).
+
 ## Test
 
 ```bash

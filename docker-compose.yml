@@ -1,0 +1,99 @@
+# Menjalankan seluruh aplikasi:
+#   cp .env.example .env      (isi JWT_SECRET dan password database)
+#   docker compose up -d --build
+#   docker compose exec backend npm run db:seed     # opsional: data demo
+# Buka http://localhost:8080
+#
+# Opsional:
+#   docker compose --profile ollama up -d           # AI lokal (Ollama) di dalam Docker
+#   docker compose --profile test run --rm backend-test   # jalankan test backend
+
+name: sci-talk
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?isi POSTGRES_PASSWORD di file .env}
+      POSTGRES_DB: ${POSTGRES_DB:-ai_chat}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Tidak dipublikasikan ke host. Untuk akses dari host (mis. DBeaver), aktifkan:
+    # ports:
+    #   - "127.0.0.1:5432:5432"
+
+  backend:
+    build:
+      context: ./backend
+      target: runtime
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ai_chat}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?isi JWT_SECRET di file .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      # Frontend dan API satu origin lewat Nginx, jadi CORS tidak diperlukan.
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      DEFAULT_PROVIDER: ${DEFAULT_PROVIDER:-ollama}
+      # Default: Ollama yang berjalan di mesin host. Dengan profile "ollama", ganti ke http://ollama:11434
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1}
+      HUGGINGFACE_API_TOKEN: ${HUGGINGFACE_API_TOKEN:-}
+      HUGGINGFACE_MODEL: ${HUGGINGFACE_MODEL:-gpt2}
+      HUGGINGFACE_API_URL: ${HUGGINGFACE_API_URL:-https://api-inference.huggingface.co/models}
+    extra_hosts:
+      # Agar host.docker.internal juga berfungsi di Linux.
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE: ${VITE_API_BASE:-}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      BACKEND_HOST: backend
+      BACKEND_PORT: 3000
+    ports:
+      - "${WEB_PORT:-8080}:80"
+
+  # --- Opsional: AI lokal di dalam Docker -----------------------------------
+  ollama:
+    profiles: ["ollama"]
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama-data:/root/.ollama
+    # Setelah start: docker compose exec ollama ollama pull llama3.1
+    # lalu set OLLAMA_URL=http://ollama:11434 di .env
+
+  # --- Opsional: test backend -----------------------------------------------
+  backend-test:
+    profiles: ["test"]
+    build:
+      context: ./backend
+      target: test
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Test memakai database <nama>_test yang dibuat dan dimigrasi otomatis.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ai_chat}?schema=public
+      JWT_SECRET: test_secret
+
+volumes:
+  db-data:
+  ollama-data:

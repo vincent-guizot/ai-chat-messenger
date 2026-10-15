@@ -54,7 +54,7 @@ export default function MessageContent(props) {
 
         if (block.type === 'heading') {
           return (
-            <h3 key={index} className="pt-1 text-sm font-semibold text-slate-900 dark:text-white">
+            <h3 key={index} className="pt-1 text-sm font-semibold text-ink">
               <InlineText text={block.text} isOwn={props.isOwn} />
             </h3>
           );

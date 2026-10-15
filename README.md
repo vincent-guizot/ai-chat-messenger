@@ -107,6 +107,18 @@ ollama pull llama3.1
 ollama serve
 ```
 
+Untuk provider kompatibel OpenAI (disarankan untuk free tier, mis. **Groq**): buat API key di https://console.groq.com, lalu set di `backend/.env`:
+
+```
+DEFAULT_PROVIDER=openai
+OPENAI_BASE_URL=https://api.groq.com/openai/v1
+OPENAI_API_KEY=<api key>
+OPENAI_MODEL=llama-3.1-8b-instant
+```
+
+Provider lain yang kompatibel (Cerebras, OpenRouter, Mistral) cukup mengganti `OPENAI_BASE_URL`, key, dan model.
+Pesan di percakapan AI (10 terakhir) dikirim ke provider tersebut; DM antar-user tidak.
+
 Untuk Hugging Face: set `DEFAULT_PROVIDER=huggingface` dan `HUGGINGFACE_API_TOKEN` di `backend/.env`.
 
 ## Menjalankan dengan Docker
@@ -146,7 +158,7 @@ cd backend
 npm test
 ```
 
-Test memakai database terpisah (`<nama_database>_test`) yang dibuat dan dimigrasi otomatis,
+Test memakai database terpisah (`TEST_DATABASE_URL`, atau `<nama_database>_test`) yang dibuat dan dimigrasi otomatis,
 jadi data development tidak ikut terhapus.
 
 ## Script backend

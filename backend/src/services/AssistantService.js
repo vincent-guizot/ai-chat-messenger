@@ -19,11 +19,12 @@ class AssistantService {
 
     const recentMessages = await MessageService.findRecentInConversation(conversationId, HISTORY_MESSAGE_LIMIT);
     const prompt = AssistantService.buildPrompt(recentMessages);
+    const chatMessages = AssistantService.buildChatMessages(recentMessages);
 
     let assistantMessage;
 
     try {
-      const result = await AiProviderService.generate(prompt);
+      const result = await AiProviderService.generate(prompt, chatMessages);
 
       assistantMessage = await MessageService.createAssistantMessage(conversationId, result.text, {
         provider: result.provider,
@@ -40,6 +41,22 @@ class AssistantService {
     await ConversationService.touch(conversationId);
 
     return assistantMessage;
+  }
+
+  /**
+   * Mengubah riwayat pesan menjadi format chat [{ role, content }]
+   * untuk provider kompatibel OpenAI.
+   */
+  static buildChatMessages(messages) {
+    return messages.map((message) => {
+      let role = 'assistant';
+
+      if (message.senderRole === 'user') {
+        role = 'user';
+      }
+
+      return { role: role, content: message.content };
+    });
   }
 
   /**

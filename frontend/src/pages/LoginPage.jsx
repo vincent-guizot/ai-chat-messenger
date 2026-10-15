@@ -6,6 +6,7 @@ import { motion } from 'motion/react';
 import { ArrowRight, Check, CircleAlert, Eye, EyeOff, LoaderCircle, Lock, Mail, UserRound } from 'lucide-react';
 import AuthApi from '../api/AuthApi';
 import { useAuthStore } from '../stores/authStore';
+import AuthLayout from '../layouts/AuthLayout';
 import AppLogo from '../components/ui/AppLogo';
 import Button from '../components/ui/Button';
 import TextField from '../components/ui/TextField';
@@ -26,7 +27,7 @@ const signupSchema = loginSchema.extend({
 const PAGE_TEXT = {
   [MODE_LOGIN]: {
     title: 'Welcome Back',
-    subtitle: 'Sign in to your AI Chat Messenger account',
+    subtitle: 'Sign in to your Chibi Room account',
     submit: 'Sign In',
     submitting: 'Signing in...',
     switchQuestion: "Don't have an account?",
@@ -35,7 +36,7 @@ const PAGE_TEXT = {
   },
   [MODE_SIGNUP]: {
     title: 'Create Account',
-    subtitle: 'Join AI Chat Messenger in a few seconds',
+    subtitle: 'Join Chibi Room in a few seconds',
     submit: 'Create Account',
     submitting: 'Creating account...',
     switchQuestion: 'Already have an account?',
@@ -73,7 +74,7 @@ const SOCIAL_PROVIDERS = [
 
 function RememberMeCheckbox(props) {
   return (
-    <label className="flex cursor-pointer select-none items-center gap-2 text-xs text-slate-300">
+    <label className="flex min-h-9 cursor-pointer select-none items-center gap-2 text-[13px] text-ink">
       <input
         type="checkbox"
         className="peer sr-only"
@@ -82,10 +83,10 @@ function RememberMeCheckbox(props) {
       />
       <span
         className={cn(
-          'flex h-4 w-4 items-center justify-center rounded border transition-colors',
-          'peer-focus-visible:ring-2 peer-focus-visible:ring-brand-400',
+          'flex h-[18px] w-[18px] items-center justify-center rounded-[5px] border transition-colors',
+          'peer-focus-visible:ring-2 peer-focus-visible:ring-brand-500 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface',
           props.checked && 'border-brand-600 bg-brand-600',
-          !props.checked && 'border-navy-600 bg-navy-950',
+          !props.checked && 'border-line bg-surface',
         )}
         aria-hidden="true"
       >
@@ -109,11 +110,11 @@ function PasswordVisibilityToggle(props) {
     <button
       type="button"
       onClick={props.onToggle}
-      className="rounded p-0.5 text-slate-500 transition-colors hover:text-white"
+      className="rounded-sm p-1 text-ink-muted transition-colors hover:text-ink"
       aria-label={label}
       title={label}
     >
-      <Icon className="h-4 w-4" />
+      <Icon className="h-[18px] w-[18px]" />
     </button>
   );
 }
@@ -182,23 +183,34 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-navy-950 px-4 py-10">
+    <AuthLayout>
       <motion.main
-        initial={{ opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: 'easeOut' }}
-        className="w-full max-w-[400px] rounded-2xl border border-navy-700 bg-navy-900 px-6 py-8 shadow-popover sm:px-8"
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+        className="rounded-xl border border-line bg-surface px-5 py-6 shadow-lg sm:px-7 short:py-5"
       >
-        <div className="flex flex-col items-center text-center">
-          <AppLogo variant="bot" size="lg" />
-
-          <motion.div key={mode} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }}>
-            <h1 className="mt-5 text-xl font-semibold text-white">{text.title}</h1>
-            <p className="mt-1.5 text-sm text-slate-400">{text.subtitle}</p>
-          </motion.div>
+        {/* Brand: logo + nama satu baris agar hemat tinggi */}
+        <div className="flex items-center justify-center gap-2.5">
+          <AppLogo size="md" />
+          <div className="text-left">
+            <p className="text-lg font-bold leading-none tracking-tight text-ink short:text-base">Chibi Room</p>
+            <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted short:hidden">AI + Real-time Messaging</p>
+          </div>
         </div>
 
-        <form onSubmit={form.handleSubmit(handleValidSubmit)} className="mt-7 space-y-4" noValidate>
+        <motion.div
+          key={mode}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.25 }}
+          className="mt-5 text-center short:mt-4"
+        >
+          <h1 className="text-[22px] font-semibold leading-tight text-ink short:text-xl">{text.title}</h1>
+          <p className="mt-1 text-sm text-ink-muted">{text.subtitle}</p>
+        </motion.div>
+
+        <form onSubmit={form.handleSubmit(handleValidSubmit)} className="mt-5 space-y-3.5 short:mt-4 short:space-y-3" noValidate>
           {mode === MODE_SIGNUP && (
             <TextField
               id="name"
@@ -249,7 +261,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={handleForgotPassword}
-                className="text-xs font-medium text-brand-400 transition-colors hover:text-brand-300"
+                className="min-h-9 text-[13px] font-semibold text-brand-600 transition-colors hover:text-brand-700 dark:text-brand-300"
               >
                 Forgot password?
               </button>
@@ -257,13 +269,16 @@ export default function LoginPage() {
           </div>
 
           {errorMessage && (
-            <div className="flex items-center gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-red-300" role="alert">
-              <CircleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <div
+              className="flex items-center gap-2 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-[13px] text-danger"
+              role="alert"
+            >
+              <CircleAlert className="h-4 w-4 shrink-0" aria-hidden="true" />
               {errorMessage}
             </div>
           )}
 
-          <Button type="submit" size="md" fullWidth disabled={isLoading} className="mt-1">
+          <Button type="submit" size="sm" fullWidth disabled={isLoading} className="shadow-md">
             {isLoading && <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />}
             {isLoading && text.submitting}
             {!isLoading && text.submit}
@@ -271,27 +286,38 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <div className="my-6 flex items-center gap-3">
-          <span className="h-px flex-1 bg-navy-700" />
-          <span className="text-xs text-slate-500">or continue with</span>
-          <span className="h-px flex-1 bg-navy-700" />
+        <div className="my-4 flex items-center gap-3 short:my-2.5">
+          <span className="h-px flex-1 bg-line" />
+          <span className="text-xs text-ink-muted">or continue with</span>
+          <span className="h-px flex-1 bg-line" />
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2.5">
           {SOCIAL_PROVIDERS.map((provider) => (
-            <Button key={provider.label} variant="outline" size="sm" onClick={provider.onClick} disabled={isLoading}>
+            <Button
+              key={provider.label}
+              variant="outline"
+              size="sm"
+              onClick={provider.onClick}
+              disabled={isLoading}
+              className="h-10 text-[13px] short:h-9"
+            >
               {provider.label}
             </Button>
           ))}
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-400">
+        <p className="mt-4 text-center text-[13px] text-ink-muted short:mt-3">
           {text.switchQuestion}{' '}
-          <button type="button" onClick={switchMode} className="font-medium text-brand-400 transition-colors hover:text-brand-300">
+          <button
+            type="button"
+            onClick={switchMode}
+            className="font-semibold text-brand-600 transition-colors hover:text-brand-700 dark:text-brand-300"
+          >
             {text.switchAction}
           </button>
         </p>
       </motion.main>
-    </div>
+    </AuthLayout>
   );
 }

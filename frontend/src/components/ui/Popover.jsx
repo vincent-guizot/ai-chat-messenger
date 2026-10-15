@@ -72,8 +72,8 @@ export default function Popover(props) {
             exit={{ opacity: 0, y: offsetY }}
             transition={{ duration: 0.12 }}
             className={cn(
-              'absolute z-50 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-popover',
-              'dark:border-navy-700 dark:bg-navy-900',
+              'absolute z-50 overflow-hidden rounded-lg border border-line bg-surface shadow-popover',
+              '',
               isAlignedLeft && 'left-0',
               !isAlignedLeft && 'right-0',
               isPlacedOnTop && 'bottom-full mb-2',

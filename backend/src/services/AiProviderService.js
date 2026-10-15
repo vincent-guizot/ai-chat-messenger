@@ -4,16 +4,29 @@ const Environment = require('../config/environment');
 const REQUEST_TIMEOUT_MS = 120000;
 const DEFAULT_MAX_NEW_TOKENS = 512;
 
+const SYSTEM_PROMPT =
+  'You are a helpful AI Assistant in a chat app. Reply in the same language the user writes in, and keep answers clear and concise.';
+
 /**
- * Pembungkus untuk penyedia model AI (Ollama dan Hugging Face).
+ * Pembungkus untuk penyedia model AI: Ollama, Hugging Face, dan provider
+ * kompatibel OpenAI (DEFAULT_PROVIDER=openai, mis. Groq).
  */
 class AiProviderService {
   /**
    * Memanggil provider yang dipilih di DEFAULT_PROVIDER.
+   * `prompt` berupa teks biasa (Ollama / Hugging Face), `messages` berupa
+   * [{ role, content }] (provider kompatibel OpenAI).
    * Mengembalikan { text, provider, model }.
    */
-  static async generate(prompt) {
+  static async generate(prompt, messages) {
     const provider = Environment.aiProvider;
+
+    if (provider === 'openai') {
+      const model = Environment.openAiModel;
+      const chatMessages = messages || [{ role: 'user', content: prompt }];
+      const text = await AiProviderService.generateWithOpenAiCompatible(chatMessages, model);
+      return { text: text, provider: provider, model: model };
+    }
 
     if (provider === 'huggingface') {
       const model = Environment.huggingFaceModel;
@@ -43,6 +56,43 @@ class AiProviderService {
 
     if (data && data.response) {
       return data.response;
+    }
+
+    return JSON.stringify(data);
+  }
+
+  /**
+   * POST {OPENAI_BASE_URL}/chat/completions (format OpenAI, dipakai Groq, Cerebras, OpenRouter, dll.).
+   */
+  static async generateWithOpenAiCompatible(messages, model) {
+    const apiKey = Environment.openAiApiKey;
+
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY not set in env');
+    }
+
+    const url = `${Environment.openAiBaseUrl}/chat/completions`;
+
+    const requestBody = {
+      model: model,
+      messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
+      max_tokens: DEFAULT_MAX_NEW_TOKENS,
+    };
+
+    const requestOptions = {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+      timeout: REQUEST_TIMEOUT_MS,
+    };
+
+    const response = await axios.post(url, requestBody, requestOptions);
+    const data = response.data;
+
+    const firstChoice = data && Array.isArray(data.choices) ? data.choices[0] : null;
+
+    if (firstChoice && firstChoice.message && firstChoice.message.content) {
+      return firstChoice.message.content;
     }
 
     return JSON.stringify(data);

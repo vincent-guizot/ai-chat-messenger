@@ -13,50 +13,51 @@ import NotificationBell from '../notifications/NotificationBell';
  *   AI  -> "Online · Ready to help" / "Thinking..."
  *   DM  -> "Online" / "typing..." / "Last seen 10m ago"
  *
- * dotClass: warna titik status (hijau = online, biru = sedang mengetik, abu-abu = offline)
+ * Status selalu berupa teks (bukan hanya warna titik), sesuai pedoman aksesibilitas.
  */
 function getStatus(props) {
   if (props.isTyping && props.isAssistant) {
-    return { text: 'Thinking...', dotClass: 'bg-brand-500' };
+    return { text: 'Thinking...', dotClass: 'bg-ai-600', textClass: 'text-ai-600 dark:text-ai-300' };
   }
 
   if (props.isTyping) {
-    return { text: 'typing...', dotClass: 'bg-brand-500' };
+    return { text: 'typing...', dotClass: 'bg-brand-600', textClass: 'text-brand-600 dark:text-brand-300' };
   }
 
   if (props.isAssistant) {
-    return { text: 'Online · Ready to help', dotClass: 'bg-success' };
+    return { text: 'Online · Ready to help', dotClass: 'bg-success', textClass: 'text-success' };
   }
 
   if (props.otherUser && props.otherUser.online) {
-    return { text: 'Online', dotClass: 'bg-success' };
+    return { text: 'Online', dotClass: 'bg-success', textClass: 'text-success' };
   }
 
   if (props.otherUser) {
-    return { text: formatLastSeen(props.otherUser.lastSeenAt), dotClass: 'bg-slate-400' };
+    return { text: formatLastSeen(props.otherUser.lastSeenAt), dotClass: 'bg-ink-muted/60', textClass: 'text-ink-muted' };
   }
 
-  return { text: '', dotClass: null };
+  return { text: '', dotClass: null, textClass: '' };
 }
 
 function MessageSearchField(props) {
   return (
-    <label className="hidden h-9 w-full max-w-64 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 transition-colors focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-500/15 md:flex dark:border-navy-700 dark:bg-navy-900">
-      <Search className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+    <label className="hidden h-11 w-full max-w-72 items-center gap-2.5 rounded-md border border-line bg-canvas px-3.5 transition-colors focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-500/15 md:flex">
+      <Search className="h-5 w-5 shrink-0 text-ink-muted" aria-hidden="true" />
       <input
         value={props.value}
         onChange={(event) => props.onChange(event.target.value)}
         placeholder="Search messages..."
-        className="min-w-0 flex-1 bg-transparent text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none dark:text-slate-100"
+        aria-label="Search messages"
+        className="min-w-0 flex-1 bg-transparent text-sm text-ink placeholder:text-ink-muted focus:outline-none"
       />
       {props.value !== '' && (
         <button
           type="button"
           onClick={() => props.onChange('')}
-          className="rounded p-0.5 text-slate-400 hover:text-slate-600"
+          className="rounded-sm p-0.5 text-ink-muted hover:text-ink"
           aria-label="Clear search"
         >
-          <X className="h-3.5 w-3.5" />
+          <X className="h-4 w-4" />
         </button>
       )}
     </label>
@@ -91,9 +92,9 @@ export default function ChatHeader(props) {
   ];
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2.5 border-b border-slate-200 bg-white px-3 sm:px-5 dark:border-navy-800 dark:bg-navy-950">
+    <header className="flex h-[76px] shrink-0 items-center gap-3 border-b border-line bg-surface px-4 sm:px-6">
       <IconButton variant="ghost" size="md" label="Open menu" className="lg:hidden" onClick={() => setMobileSidebarOpen(true)}>
-        <Menu className="h-[18px] w-[18px]" />
+        <Menu className="h-5 w-5" />
       </IconButton>
 
       {props.hasConversation && (
@@ -101,9 +102,9 @@ export default function ChatHeader(props) {
           <Avatar isAssistant={props.isAssistant} name={otherUserName} size="lg" />
 
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-[15px] font-semibold leading-tight text-slate-900 dark:text-white">{props.title}</h1>
-            <p className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              {status.dotClass && <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', status.dotClass)} aria-hidden="true" />}
+            <h1 className="truncate text-lg font-semibold leading-tight text-ink">{props.title}</h1>
+            <p className={cn('flex items-center gap-1.5 text-sm', status.textClass)}>
+              {status.dotClass && <span className={cn('h-2 w-2 shrink-0 rounded-full', status.dotClass)} aria-hidden="true" />}
               <span className="truncate">{status.text}</span>
             </p>
           </div>
@@ -116,15 +117,15 @@ export default function ChatHeader(props) {
 
       <NotificationBell />
 
-      <IconButton variant="card" size="lg" label={themeLabel} onClick={toggleTheme} className="hidden sm:inline-flex">
-        <ThemeIcon className="h-[18px] w-[18px]" />
+      <IconButton variant="card" size="md" label={themeLabel} onClick={toggleTheme} className="hidden sm:inline-flex">
+        <ThemeIcon className="h-5 w-5" />
       </IconButton>
 
       <DropdownMenu
         items={menuItems}
         trigger={(isOpen, toggle) => (
-          <IconButton variant="card" size="lg" label="More options" onClick={toggle} aria-expanded={isOpen}>
-            <EllipsisVertical className="h-[18px] w-[18px]" />
+          <IconButton variant="card" size="md" label="More options" onClick={toggle} aria-expanded={isOpen}>
+            <EllipsisVertical className="h-5 w-5" />
           </IconButton>
         )}
       />

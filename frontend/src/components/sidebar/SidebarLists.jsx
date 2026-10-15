@@ -2,25 +2,24 @@ import { useAuthStore } from '../../stores/authStore';
 import { toTypingInfo, useChatStore } from '../../stores/chatStore';
 import Avatar, { toPresenceStatus } from '../ui/Avatar';
 import SidebarListItem from './SidebarListItem';
-import StatusDot from './StatusDot';
 import { formatLastSeen, formatTime, truncate } from '../../utils/formatters';
 import { findOtherUser, getConversationTitle, getLastMessage } from '../../utils/conversations';
 
 const MAX_BADGE_COUNT = 9;
 
 function EmptyListMessage(props) {
-  return <p className="px-3 py-6 text-center text-xs leading-relaxed text-slate-400">{props.children}</p>;
+  return <p className="px-3 py-6 text-center text-sm leading-relaxed text-ink-muted">{props.children}</p>;
 }
 
 function LoadingRows() {
   return (
     <div className="space-y-1" aria-label="Loading">
       {[0, 1, 2].map((row) => (
-        <div key={row} className="flex items-center gap-2.5 px-2.5 py-2">
-          <div className="h-9 w-9 animate-pulse rounded-full bg-navy-800" />
-          <div className="flex-1 space-y-1.5">
-            <div className="h-2.5 w-20 animate-pulse rounded bg-navy-800" />
-            <div className="h-2.5 w-28 animate-pulse rounded bg-navy-800/60" />
+        <div key={row} className="flex items-center gap-3 px-3 py-3">
+          <div className="h-12 w-12 animate-pulse rounded-full bg-line" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3 w-24 animate-pulse rounded bg-line" />
+            <div className="h-3 w-32 animate-pulse rounded bg-line/60" />
           </div>
         </div>
       ))}
@@ -38,7 +37,7 @@ function UnreadBadge(props) {
   }
 
   return (
-    <span className="flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-white">
+    <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-danger px-1 text-[11px] font-semibold text-white">
       {label}
     </span>
   );
@@ -61,7 +60,7 @@ function getPresenceText(user) {
 
 function getPresenceClassName(user) {
   if (user && user.online) {
-    return 'text-green-400';
+    return 'font-medium text-success';
   }
 
   return undefined;
@@ -80,23 +79,23 @@ function AssistantConversationItem(props) {
 
   if (typingInfo.assistant) {
     subtitle = 'Thinking...';
-    subtitleClassName = 'text-brand-300';
+    subtitleClassName = 'font-medium text-ai-600 dark:text-ai-300';
   } else if (lastMessage) {
     subtitle = truncate(lastMessage.content, 40);
   }
 
-  let trailing = null;
+  let time;
   if (lastMessage) {
-    trailing = <span className="shrink-0 self-start pt-0.5 text-[11px] text-slate-500">{formatTime(lastMessage.createdAt)}</span>;
+    time = formatTime(lastMessage.createdAt);
   }
 
   return (
     <SidebarListItem
-      avatar={<Avatar isAssistant size="md" />}
+      avatar={<Avatar isAssistant size="lg" />}
       title={getConversationTitle(conversation, null)}
+      time={time}
       subtitle={subtitle}
       subtitleClassName={subtitleClassName}
-      trailing={trailing}
       isActive={props.isActive}
       isCollapsed={props.isCollapsed}
       onClick={() => props.onOpen(conversation.id)}
@@ -145,7 +144,7 @@ function DirectConversationItem(props) {
 
   if (typingInfo.userIds.length > 0) {
     subtitle = 'typing...';
-    subtitleClassName = 'text-brand-300';
+    subtitleClassName = 'font-medium text-brand-600 dark:text-brand-300';
   }
 
   let otherUserName;
@@ -153,21 +152,30 @@ function DirectConversationItem(props) {
     otherUserName = otherUser.name;
   }
 
-  // Ada pesan belum dibaca -> badge merah, jika tidak -> titik status online.
-  let trailing = <StatusDot isOnline={isOnline} />;
+  const lastMessage = getLastMessage(conversation);
+
+  let time;
+  let preview;
+  if (lastMessage) {
+    time = formatTime(lastMessage.createdAt);
+    preview = truncate(lastMessage.content, 32);
+  }
+
+  // Ada pesan belum dibaca -> badge merah di kanan bawah.
+  let badge = null;
   if (props.unreadCount > 0) {
-    trailing = <UnreadBadge count={props.unreadCount} />;
+    badge = <UnreadBadge count={props.unreadCount} />;
   }
 
   return (
     <SidebarListItem
-      avatar={
-        <Avatar name={otherUserName} size="md" status={toPresenceStatus(isOnline)} statusRingClassName="ring-navy-900" />
-      }
+      avatar={<Avatar name={otherUserName} size="lg" status={toPresenceStatus(isOnline)} />}
       title={getConversationTitle(conversation, otherUser)}
+      time={time}
       subtitle={subtitle}
       subtitleClassName={subtitleClassName}
-      trailing={trailing}
+      preview={preview}
+      badge={badge}
       isActive={props.isActive}
       isCollapsed={props.isCollapsed}
       onClick={() => props.onOpen(conversation.id)}
@@ -211,18 +219,10 @@ export function ContactList(props) {
   return props.contacts.map((contact) => (
     <SidebarListItem
       key={contact.id}
-      avatar={
-        <Avatar
-          name={contact.name}
-          size="md"
-          status={toPresenceStatus(contact.online)}
-          statusRingClassName="ring-navy-900"
-        />
-      }
+      avatar={<Avatar name={contact.name} size="lg" status={toPresenceStatus(contact.online)} />}
       title={contact.name}
       subtitle={getPresenceText(contact)}
       subtitleClassName={getPresenceClassName(contact)}
-      trailing={<StatusDot isOnline={contact.online} />}
       isCollapsed={props.isCollapsed}
       onClick={() => props.onStartChat(contact.id)}
     />

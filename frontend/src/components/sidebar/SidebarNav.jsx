@@ -9,7 +9,7 @@ const NAV_ITEMS = [
 ];
 
 /**
- * Angka kecil di kanan menu: jumlah pesan belum dibaca (merah) atau user online (hijau).
+ * Angka kecil di kanan menu: jumlah pesan belum dibaca (merah) atau user online (biru).
  */
 function NavCounter(props) {
   if (props.count <= 0) {
@@ -19,10 +19,11 @@ function NavCounter(props) {
   return (
     <span
       className={cn(
-        'ml-auto rounded-full px-1.5 py-0.5 text-[11px] font-semibold leading-none',
-        props.tone === 'danger' && 'bg-danger text-white',
-        props.tone === 'success' && 'bg-success/15 text-green-400',
+        'ml-auto flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-semibold leading-none text-white',
+        props.tone === 'danger' && 'bg-danger',
+        props.tone === 'primary' && 'bg-brand-600',
       )}
+      aria-label={props.label}
     >
       {props.count}
     </span>
@@ -31,7 +32,7 @@ function NavCounter(props) {
 
 export default function SidebarNav(props) {
   return (
-    <nav className="space-y-0.5" aria-label="Sidebar">
+    <nav className="space-y-1" aria-label="Sidebar">
       {NAV_ITEMS.map((item) => {
         const Icon = item.icon;
         const isActive = props.activeTab === item.tab;
@@ -44,21 +45,21 @@ export default function SidebarNav(props) {
             title={item.label}
             aria-pressed={isActive}
             className={cn(
-              'flex h-9 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium transition-colors',
-              isActive && 'bg-navy-700 text-white',
-              !isActive && 'text-slate-300 hover:bg-navy-800 hover:text-white',
+              'flex h-12 w-full items-center gap-3 rounded-md px-3 text-left text-[15px] font-medium transition-colors',
+              isActive && 'bg-soft text-brand-700 dark:text-brand-300',
+              !isActive && 'text-ink hover:bg-tint',
               props.isCollapsed && 'justify-center px-0',
             )}
           >
-            <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-brand-600 dark:text-brand-300')} aria-hidden="true" />
             {!props.isCollapsed && <span className="truncate">{item.label}</span>}
 
             {!props.isCollapsed && item.tab === SIDEBAR_TABS.direct && (
-              <NavCounter count={props.unreadDirectCount} tone="danger" />
+              <NavCounter count={props.unreadDirectCount} tone="danger" label={`${props.unreadDirectCount} unread`} />
             )}
 
             {!props.isCollapsed && item.tab === SIDEBAR_TABS.contacts && (
-              <NavCounter count={props.onlineCount} tone="success" />
+              <NavCounter count={props.onlineCount} tone="primary" label={`${props.onlineCount} online`} />
             )}
           </button>
         );

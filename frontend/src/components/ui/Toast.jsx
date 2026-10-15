@@ -27,7 +27,7 @@ export default function Toast() {
             initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 16 }}
-            className="pointer-events-auto flex max-w-sm items-center gap-2.5 overflow-hidden rounded-lg border border-slate-200 bg-white py-2.5 pl-3 pr-4 text-sm text-slate-700 shadow-popover dark:border-navy-700 dark:bg-navy-900 dark:text-slate-100"
+            className="pointer-events-auto flex max-w-sm items-center gap-2.5 overflow-hidden rounded-lg border border-line bg-surface py-2.5 pl-3 pr-4 text-sm text-ink shadow-popover"
           >
             <span className={cn('h-5 w-1 shrink-0 rounded-full', style.barClass)} aria-hidden="true" />
             <Icon className={cn('h-4 w-4 shrink-0', style.accentClass)} aria-hidden="true" />

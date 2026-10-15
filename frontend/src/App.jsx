@@ -6,7 +6,7 @@ import ChatPage from './pages/ChatPage';
 
 /**
  * Menerapkan tema (terang/gelap) dengan menambah/menghapus class "dark" di <html>.
- * Halaman login selalu memakai tampilan gelap sesuai desain.
+ * Berlaku untuk semua halaman, termasuk login.
  */
 function useApplyTheme() {
   const theme = useUiStore((state) => state.theme);

@@ -9,9 +9,10 @@ const avatarVariants = cva(
     variants: {
       size: {
         xs: 'h-6 w-6 text-[10px]',
-        sm: 'h-8 w-8 text-[11px]',
-        md: 'h-9 w-9 text-xs',
-        lg: 'h-10 w-10 text-sm',
+        sm: 'h-8 w-8 text-xs',
+        md: 'h-10 w-10 text-sm',
+        lg: 'h-12 w-12 text-base',
+        xl: 'h-14 w-14 text-lg',
       },
     },
     defaultVariants: {
@@ -23,15 +24,25 @@ const avatarVariants = cva(
 const STATUS_DOT_SIZES = {
   xs: 'h-2 w-2',
   sm: 'h-2.5 w-2.5',
-  md: 'h-2.5 w-2.5',
-  lg: 'h-3 w-3',
+  md: 'h-3 w-3',
+  lg: 'h-3.5 w-3.5',
+  xl: 'h-4 w-4',
 };
 
 const ICON_SIZES = {
   xs: 'h-3.5 w-3.5',
   sm: 'h-4 w-4',
-  md: 'h-[18px] w-[18px]',
-  lg: 'h-5 w-5',
+  md: 'h-5 w-5',
+  lg: 'h-6 w-6',
+  xl: 'h-7 w-7',
+};
+
+// Warna titik status. Selalu ada label teks (aria-label) agar tidak hanya mengandalkan warna.
+const STATUS_COLORS = {
+  online: 'bg-success',
+  away: 'bg-warning',
+  busy: 'bg-danger',
+  offline: 'bg-ink-muted/60',
 };
 
 /**
@@ -46,21 +57,20 @@ export function toPresenceStatus(isOnline) {
 }
 
 /**
- * Avatar user (inisial berwarna) atau avatar AI (ikon robot).
+ * Avatar user (inisial berwarna) atau avatar AI (ikon robot, ungu).
  *
  * Props:
  *   name         nama user, dipakai untuk inisial & warna
  *   isAssistant  true untuk AI Assistant
- *   status       "online" | "offline" | undefined (tanpa titik status)
- *   size         "xs" | "sm" | "md" | "lg"
- *   statusRingClassName  warna cincin titik status (samakan dengan warna latar)
+ *   status       "online" | "away" | "busy" | "offline" | undefined (tanpa titik status)
+ *   size         "xs" | "sm" | "md" | "lg" | "xl"
  */
 export default function Avatar(props) {
   const size = props.size || 'md';
 
   let backgroundClass = getAvatarColor(props.name);
   if (props.isAssistant) {
-    backgroundClass = 'bg-brand-600';
+    backgroundClass = 'bg-ai-600';
   }
 
   let content = getInitials(props.name, '?');
@@ -75,12 +85,12 @@ export default function Avatar(props) {
       {props.status && (
         <span
           className={cn(
-            'absolute -bottom-px -right-px rounded-full ring-2 ring-white dark:ring-navy-950',
+            'absolute -bottom-px -right-px rounded-full ring-2 ring-surface',
             STATUS_DOT_SIZES[size],
-            props.status === 'online' && 'bg-success',
-            props.status !== 'online' && 'bg-slate-400',
+            STATUS_COLORS[props.status] || STATUS_COLORS.offline,
             props.statusRingClassName,
           )}
+          role="img"
           aria-label={props.status}
         />
       )}

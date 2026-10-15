@@ -2,24 +2,28 @@ import { cva } from 'class-variance-authority';
 import { cn } from '../../lib/cn';
 
 export const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-60',
+  'inline-flex items-center justify-center gap-2 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60',
   {
     variants: {
       variant: {
         // Tombol utama: biru solid
-        primary: 'bg-brand-600 text-white hover:bg-brand-700',
-        // Tombol di atas latar navy (halaman login)
-        outline: 'border border-navy-600 bg-navy-800 text-slate-100 hover:border-brand-500 hover:bg-navy-700',
-        // Tombol putih dengan garis (latar terang)
-        soft:
-          'border border-slate-200 bg-white text-slate-700 hover:border-brand-300 hover:text-brand-700 dark:border-navy-700 dark:bg-navy-800 dark:text-slate-200 dark:hover:border-brand-500',
-        ghost: 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-navy-800',
+        primary: 'bg-brand-600 text-white shadow-sm hover:bg-brand-700',
+        // Tombol sekunder: biru lembut
+        secondary: 'bg-soft text-brand-700 hover:bg-brand-100 dark:text-brand-300 dark:hover:bg-brand-900/40',
+        // Tombol putih dengan garis
+        outline: 'border border-line bg-surface text-ink hover:border-brand-300 hover:bg-tint',
+        // Alias lama untuk "outline" (dipakai di beberapa halaman)
+        soft: 'border border-line bg-surface text-ink hover:border-brand-300 hover:bg-tint',
+        // Aksen AI (ungu)
+        ai: 'border border-ai-line bg-ai-soft text-ai-700 hover:border-ai-400 dark:text-ai-300',
+        ghost: 'text-ink-muted hover:bg-tint hover:text-ink',
+        danger: 'bg-danger text-white hover:bg-danger/90',
       },
       size: {
-        sm: 'h-8 rounded-lg px-3 text-xs',
-        md: 'h-10 rounded-lg px-4 text-sm',
-        lg: 'h-11 rounded-lg px-5 text-sm',
-        pill: 'h-8 rounded-full px-3.5 text-xs',
+        sm: 'h-11 rounded-md px-3 text-sm',
+        md: 'h-12 rounded-md px-5 text-base',
+        lg: 'h-12 rounded-md px-6 text-base',
+        pill: 'h-11 rounded-full px-4 text-sm font-medium',
       },
       fullWidth: {
         true: 'w-full',

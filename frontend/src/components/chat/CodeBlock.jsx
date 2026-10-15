@@ -27,16 +27,16 @@ export default function CodeBlock(props) {
   }
 
   return (
-    <div className="my-2 overflow-hidden rounded-lg border border-slate-200 bg-slate-50 dark:border-navy-700 dark:bg-navy-950">
-      <div className="flex items-center justify-between border-b border-slate-200 px-3 py-1.5 dark:border-navy-700">
-        <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400">{props.language || 'code'}</span>
+    <div className="my-2 overflow-hidden rounded-lg border border-line bg-canvas">
+      <div className="flex items-center justify-between border-b border-line px-3 py-1.5">
+        <span className="font-mono text-[11px] text-ink-muted dark:text-ink-muted">{props.language || 'code'}</span>
         <button
           type="button"
           onClick={handleCopy}
           className={cn(
             'flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium transition-colors',
             isCopied && 'text-green-600 dark:text-green-400',
-            !isCopied && 'text-slate-500 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-300',
+            !isCopied && 'text-ink-muted hover:text-brand-600 dark:text-ink-muted dark:hover:text-brand-300',
           )}
         >
           <CopyIcon className="h-3 w-3" aria-hidden="true" />
@@ -44,7 +44,7 @@ export default function CodeBlock(props) {
         </button>
       </div>
 
-      <pre className="overflow-x-auto px-3 py-2.5 font-mono text-xs leading-relaxed text-slate-800 dark:text-slate-200">
+      <pre className="overflow-x-auto px-3 py-2.5 font-mono text-xs leading-relaxed text-ink">
         <code>
           {tokens.map((token, index) => {
             if (token.type === 'text') {

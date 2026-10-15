@@ -30,9 +30,9 @@ export default function DropdownMenu(props) {
                 role="menuitem"
                 onClick={handleSelect}
                 className={cn(
-                  'flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors',
+                  'flex w-full items-center gap-2.5 rounded-sm px-2.5 py-2 text-left text-sm transition-colors',
                   item.danger && 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10',
-                  !item.danger && 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-navy-800',
+                  !item.danger && 'text-ink hover:bg-tint',
                 )}
               >
                 {Icon && <Icon className="h-4 w-4" aria-hidden="true" />}

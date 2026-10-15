@@ -164,7 +164,7 @@ export default function ChatPage() {
     <div className="flex h-full overflow-hidden">
       <Sidebar onLogout={handleLogout} />
 
-      <main className="flex min-w-0 flex-1 flex-col bg-slate-50 dark:bg-navy-950">
+      <main className="flex min-w-0 flex-1 flex-col bg-canvas">
         <ChatHeader
           hasConversation={Boolean(activeConversation)}
           title={title}

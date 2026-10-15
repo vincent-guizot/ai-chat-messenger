@@ -12,21 +12,21 @@ export default function WelcomeScreen(props) {
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex max-w-sm flex-col items-center text-center"
+        className="flex max-w-md flex-col items-center text-center"
       >
-        <AppLogo variant="bot" size="lg" />
-        <h2 className="mt-5 text-lg font-semibold text-slate-900 dark:text-white">Chat with AI, and connect with people</h2>
-        <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+        <AppLogo size="lg" />
+        <h2 className="mt-6 text-2xl font-semibold text-ink">Chat with AI, and connect with people</h2>
+        <p className="mt-2 text-base leading-relaxed text-ink-muted">
           Get instant answers from the AI Assistant, or start a direct conversation with anyone who is online.
         </p>
 
         <div className="mt-6 flex flex-col gap-2 sm:flex-row">
           <Button onClick={props.onStartAiChat} disabled={props.isCreating}>
-            <Bot className="h-4 w-4" aria-hidden="true" />
+            <Bot className="h-5 w-5" aria-hidden="true" />
             Start AI chat
           </Button>
-          <Button variant="soft" onClick={props.onShowContacts}>
-            <UsersRound className="h-4 w-4" aria-hidden="true" />
+          <Button variant="outline" onClick={props.onShowContacts}>
+            <UsersRound className="h-5 w-5" aria-hidden="true" />
             Browse contacts
           </Button>
         </div>

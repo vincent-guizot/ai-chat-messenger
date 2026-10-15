@@ -35,6 +35,19 @@ class Environment {
     return process.env.OLLAMA_MODEL || 'llama3.1';
   }
 
+  // Provider kompatibel OpenAI (Groq, Cerebras, OpenRouter, Mistral, dll.).
+  static get openAiBaseUrl() {
+    return (process.env.OPENAI_BASE_URL || 'https://api.groq.com/openai/v1').replace(/\/+$/, '');
+  }
+
+  static get openAiApiKey() {
+    return process.env.OPENAI_API_KEY || '';
+  }
+
+  static get openAiModel() {
+    return process.env.OPENAI_MODEL || 'llama-3.1-8b-instant';
+  }
+
   static get huggingFaceToken() {
     return process.env.HUGGINGFACE_API_TOKEN || '';
   }

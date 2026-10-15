@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ChevronsLeft, ChevronsRight, SquarePen, X } from 'lucide-react';
+import { ChevronsLeft, ChevronsRight, Plus, SquarePen, X } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { SIDEBAR_TABS, useUiStore } from '../../stores/uiStore';
 import { useChatStore } from '../../stores/chatStore';
@@ -21,8 +21,8 @@ import SidebarNav from './SidebarNav';
 import UserFooter from './UserFooter';
 import { AssistantConversationList, ContactList, DirectConversationList } from './SidebarLists';
 
-const EXPANDED_WIDTH = 288;
-const COLLAPSED_WIDTH = 68;
+const EXPANDED_WIDTH = 312;
+const COLLAPSED_WIDTH = 84;
 const EMPTY_LIST = [];
 
 const SECTION_TITLES = {
@@ -30,6 +30,28 @@ const SECTION_TITLES = {
   [SIDEBAR_TABS.direct]: 'Direct Messages',
   [SIDEBAR_TABS.contacts]: 'Contacts',
 };
+
+/**
+ * Hiasan gelombang biru lembut di sudut kiri bawah sidebar (murni dekoratif).
+ */
+function SidebarDecoration() {
+  return (
+    <svg
+      className="pointer-events-none absolute -bottom-6 -left-10 h-56 w-72 opacity-80 dark:opacity-40"
+      viewBox="0 0 288 224"
+      fill="none"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="sidebar-wave" x1="0" y1="224" x2="220" y2="40" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#2160F5" stopOpacity="0.55" />
+          <stop offset="1" stopColor="#8EB2FB" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d="M0 224V92c58 6 112 44 150 92 14 17 34 30 56 40H0Z" fill="url(#sidebar-wave)" />
+    </svg>
+  );
+}
 
 /**
  * Isi sidebar. Dipakai di dua tempat: sidebar tetap (layar besar) dan laci (layar kecil).
@@ -73,22 +95,40 @@ function SidebarContent(props) {
     collapseLabel = 'Expand sidebar';
   }
 
+  // Tombol "+" di judul daftar: chat AI baru (tab AI) atau cari teman chat (tab Direct Messages).
+  function handlePlusClick() {
+    if (activeTab === SIDEBAR_TABS.assistant) {
+      createAiConversation.mutate();
+    } else {
+      setActiveTab(SIDEBAR_TABS.contacts);
+    }
+  }
+
   return (
-    <div className="flex h-full flex-col gap-4 border-r border-navy-800 bg-navy-900 px-3 py-4 text-white">
+    <div className="relative flex h-full flex-col gap-4 overflow-hidden border-r border-line bg-surface px-4 py-5 text-ink shadow-sm">
+      <SidebarDecoration />
+
       {/* Logo & tombol ciutkan */}
-      <div className={cn('flex items-center gap-2.5 px-1', isCollapsed && 'flex-col')}>
+      <div className={cn('relative flex items-center gap-3', isCollapsed && 'flex-col')}>
         <AppLogo />
-        {!isCollapsed && <span className="flex-1 truncate text-[15px] font-semibold">AI Chat Messenger</span>}
+        {!isCollapsed && (
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-2xl font-bold leading-none tracking-tight text-ink">Chibi Room</div>
+            <div className="mt-1 truncate text-[9px] font-medium uppercase tracking-[0.08em] text-ink-muted">
+              AI + Real-time Messaging
+            </div>
+          </div>
+        )}
 
         {props.onClose && (
           <IconButton variant="sidebar" size="sm" label="Close menu" onClick={props.onClose}>
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </IconButton>
         )}
 
         {!props.onClose && (
           <IconButton variant="sidebar" size="sm" label={collapseLabel} onClick={toggleSidebarCollapsed}>
-            <CollapseIcon className="h-4 w-4" />
+            <CollapseIcon className="h-5 w-5" />
           </IconButton>
         )}
       </div>
@@ -100,39 +140,53 @@ function SidebarContent(props) {
         disabled={createAiConversation.isPending}
         title="New Chat (Alt + N)"
         className={cn(
-          'flex h-9 items-center gap-2.5 rounded-lg bg-brand-600 px-3 text-sm font-medium text-white transition-colors',
+          'relative flex h-12 items-center gap-3 rounded-md bg-brand-600 px-4 text-base font-semibold text-white shadow-md transition-colors',
           'hover:bg-brand-700 disabled:opacity-70',
           isCollapsed && 'justify-center px-0',
         )}
       >
-        <SquarePen className="h-4 w-4 shrink-0" aria-hidden="true" />
+        <SquarePen className="h-5 w-5 shrink-0" aria-hidden="true" />
         {!isCollapsed && <span className="flex-1 text-left">New Chat</span>}
         {!isCollapsed && (
-          <kbd className="rounded border border-white/25 px-1.5 py-px font-sans text-[10px] font-medium text-white/80">
+          <kbd className="rounded-sm bg-white/15 px-2 py-1 font-sans text-xs font-medium text-white">
             Alt N
           </kbd>
         )}
       </button>
 
-      <SidebarNav
+      <div className="relative">
+        <SidebarNav
         activeTab={activeTab}
         onChange={setActiveTab}
         isCollapsed={isCollapsed}
         onlineCount={onlineCount}
         unreadDirectCount={unreadDirectCount}
-      />
+        />
+      </div>
 
-      <div className="h-px bg-navy-800" />
+      <div className="relative h-px bg-line" />
 
       {/* Daftar sesuai tab yang aktif */}
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="relative flex min-h-0 flex-1 flex-col">
         {!isCollapsed && (
-          <h2 className="mb-1.5 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-            {SECTION_TITLES[activeTab]}
-          </h2>
+          <div className="mb-2 flex items-center justify-between px-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">{SECTION_TITLES[activeTab]}</h2>
+
+            {activeTab !== SIDEBAR_TABS.contacts && (
+              <IconButton
+                variant="ghost"
+                size="sm"
+                label={activeTab === SIDEBAR_TABS.assistant ? 'New AI chat' : 'Find someone to chat with'}
+                onClick={handlePlusClick}
+                className="-mr-2"
+              >
+                <Plus className="h-5 w-5" />
+              </IconButton>
+            )}
+          </div>
         )}
 
-        <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto">
+        <div className="min-h-0 flex-1 space-y-1 overflow-y-auto">
           {activeTab === SIDEBAR_TABS.assistant && (
             <AssistantConversationList
               conversations={assistantConversations}
@@ -166,7 +220,9 @@ function SidebarContent(props) {
         </div>
       </div>
 
-      <UserFooter isCollapsed={isCollapsed} onLogout={props.onLogout} />
+      <div className="relative">
+        <UserFooter isCollapsed={isCollapsed} onLogout={props.onLogout} />
+      </div>
     </div>
   );
 }
@@ -198,14 +254,14 @@ export default function Sidebar(props) {
         {isMobileSidebarOpen && (
           <div className="fixed inset-0 z-40 lg:hidden">
             <motion.div
-              className="absolute inset-0 bg-navy-950/60"
+              className="absolute inset-0 bg-ink/50"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMobileSidebarOpen(false)}
             />
             <motion.aside
-              className="absolute inset-y-0 left-0 w-[min(288px,85vw)]"
+              className="absolute inset-y-0 left-0 w-[min(300px,88vw)]"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}

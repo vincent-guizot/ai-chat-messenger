@@ -18,6 +18,11 @@ class ErrorMiddleware {
       return response.status(error.statusCode).json({ ok: false, error: error.message });
     }
 
+    // Body JSON yang rusak (dilempar express.json) adalah kesalahan client, bukan server.
+    if (error.type === 'entity.parse.failed') {
+      return response.status(400).json({ ok: false, error: 'invalid JSON body' });
+    }
+
     console.error(`[${request.method} ${request.originalUrl}]`, error);
 
     return response.status(500).json({ ok: false, error: 'internal server error' });

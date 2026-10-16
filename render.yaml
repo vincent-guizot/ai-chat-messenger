@@ -1,0 +1,58 @@
+# Render Blueprint: backend-core (API + Socket.IO) dan backend-aichat (service AI).
+# Database ada di Neon; frontend ada di Vercel.
+# Cara pakai: Render Dashboard -> New -> Blueprint -> pilih repo ini -> isi variabel yang diminta.
+services:
+  - type: web
+    name: chibi-aichat
+    runtime: docker
+    dockerfilePath: ./backend-aichat/Dockerfile
+    dockerContext: ./backend-aichat
+    plan: free
+    region: singapore
+    healthCheckPath: /api/health
+    envVars:
+      - key: AI_SERVICE_TOKEN
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: DEFAULT_PROVIDER
+        value: openai
+      - key: OPENAI_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: OPENAI_MODEL
+        value: openai/gpt-oss-20b
+      - key: OPENAI_API_KEY
+        sync: false
+
+  - type: web
+    name: chibi-core
+    runtime: docker
+    dockerfilePath: ./backend-core/Dockerfile
+    dockerContext: ./backend-core
+    plan: free
+    region: singapore
+    healthCheckPath: /api/health
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: SKIP_DB_CREATE
+        value: "true"
+      # Neon, connection string pooled.
+      - key: DATABASE_URL
+        sync: false
+      # Neon, connection string langsung (tanpa -pooler), khusus migrasi.
+      - key: DATABASE_URL_UNPOOLED
+        sync: false
+      # URL publik chibi-aichat, mis. https://chibi-aichat.onrender.com
+      - key: AI_SERVICE_URL
+        sync: false
+      - key: AI_SERVICE_TOKEN
+        fromService:
+          type: web
+          name: chibi-aichat
+          envVarKey: AI_SERVICE_TOKEN
+      # URL frontend Vercel, tanpa slash di akhir, mis. https://chibi-room.vercel.app
+      - key: CORS_ORIGIN
+        sync: false

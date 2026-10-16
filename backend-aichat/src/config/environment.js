@@ -1,7 +1,6 @@
 const dotenv = require("dotenv");
 const { z } = require("zod");
-
-dotenv.config();
+dotenv.config({ override: process.env.NODE_ENV !== "production" });
 
 /**
  * Menghapus slash di akhir URL supaya penggabungan path tidak menghasilkan "//".
@@ -25,7 +24,7 @@ const environmentSchema = z.object({
 
   DEFAULT_PROVIDER: z
     .enum(["ollama", "openai", "huggingface"])
-    .default("ollama"),
+    .default("openai"),
 
   OLLAMA_URL: z
     .string()

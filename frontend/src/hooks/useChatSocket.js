@@ -165,9 +165,13 @@ export default function useChatSocket() {
     socket.on("notification:new", handleNewNotification);
 
     chatStore.setConnectionStatus("connecting");
+
+    // Koneksi ditunda satu tick. Di dev, React StrictMode memasang lalu langsung melepas efek ini;
+    // tanpa penundaan, koneksi pertama terputus di tengah handshake (ws "interrupted" / ECONNABORTED).
+    // Dengan penundaan, cleanup membatalkan timer itu sehingga hanya satu koneksi yang dibuka.
     const connectTimer = window.setTimeout(() => {
       socket.connect();
-    });
+    }, 0);
 
     return () => {
       window.clearTimeout(connectTimer);

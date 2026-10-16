@@ -2,7 +2,9 @@ import axios from 'axios';
 import { useAuthStore } from '@/stores/authStore';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
-const REQUEST_TIMEOUT_MS = 30000;
+// Backend di Render plan free "tidur" saat idle dan butuh 30-60 detik untuk bangun,
+// jadi request pertama diberi waktu lebih lama.
+const REQUEST_TIMEOUT_MS = 60000;
 
 /**
  * Satu instance axios untuk seluruh request ke backend.

@@ -14,6 +14,7 @@ const environmentSchema = z.object({
     .enum(["development", "test", "production"])
     .default("development"),
   PORT: z.coerce.number().int().positive().default(3000),
+  // "*" atau daftar origin dipisah koma, mis. "https://app.vercel.app,https://app-git-main.vercel.app"
   CORS_ORIGIN: z.string().default("*"),
   DATABASE_URL: z
     .string()
@@ -89,8 +90,21 @@ class Environment {
     return config.PORT;
   }
 
+  /**
+   * Nilai untuk opsi `origin` di cors / Socket.IO:
+   * "*" -> semua origin; selain itu -> array origin (tanpa spasi dan slash di akhir).
+   */
   static get corsOrigin() {
-    return config.CORS_ORIGIN;
+    const raw = config.CORS_ORIGIN.trim();
+
+    if (raw === "*" || raw === "") {
+      return "*";
+    }
+
+    return raw
+      .split(",")
+      .map((origin) => origin.trim().replace(/\/+$/, ""))
+      .filter((origin) => origin.length > 0);
   }
 
   static get databaseUrl() {

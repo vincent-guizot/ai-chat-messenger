@@ -1,9 +1,10 @@
-# Render Blueprint: backend-core (API + Socket.IO) dan backend-aichat (service AI).
+# Render Blueprint (OPSIONAL): membuat backend-core (API + Socket.IO) dan backend-aichat sekaligus.
+# Kalau service sudah dibuat manual lewat dashboard, file ini tidak perlu dipakai (lihat DEPLOY.md).
 # Database ada di Neon; frontend ada di Vercel.
 # Cara pakai: Render Dashboard -> New -> Blueprint -> pilih repo ini -> isi variabel yang diminta.
 services:
   - type: web
-    name: chibi-aichat
+    name: chibi-ai
     runtime: docker
     dockerfilePath: ./backend-aichat/Dockerfile
     dockerContext: ./backend-aichat
@@ -35,6 +36,8 @@ services:
     envVars:
       - key: JWT_SECRET
         generateValue: true
+      - key: NODE_ENV
+        value: production
       - key: JWT_EXPIRES_IN
         value: 7d
       - key: SKIP_DB_CREATE
@@ -45,13 +48,13 @@ services:
       # Neon, connection string langsung (tanpa -pooler), khusus migrasi.
       - key: DATABASE_URL_UNPOOLED
         sync: false
-      # URL publik chibi-aichat, mis. https://chibi-aichat.onrender.com
+      # URL publik chibi-ai, mis. https://chibi-ai-2mba.onrender.com
       - key: AI_SERVICE_URL
         sync: false
       - key: AI_SERVICE_TOKEN
         fromService:
           type: web
-          name: chibi-aichat
+          name: chibi-ai
           envVarKey: AI_SERVICE_TOKEN
       # URL frontend Vercel, tanpa slash di akhir, mis. https://chibi-room.vercel.app
       - key: CORS_ORIGIN

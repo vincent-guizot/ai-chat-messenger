@@ -29,7 +29,9 @@ describe('GET /api/users/me', () => {
     expect(response.body.user.passwordHash).toBeUndefined();
   });
 
-  test('returns 404 when the token is valid but the user no longer exists', async () => {
+  // 401 (bukan 404) supaya frontend otomatis logout: token sah tetapi user-nya sudah tidak ada,
+  // mis. setelah database diganti.
+  test('returns 401 when the token is valid but the user no longer exists', async () => {
     const orphanToken = jsonWebToken.sign(
       { sub: '00000000-0000-0000-0000-000000000000', email: 'deleted@example.com' },
       Environment.jwtSecret
@@ -39,7 +41,7 @@ describe('GET /api/users/me', () => {
       .get('/api/users/me')
       .set('Authorization', `Bearer ${orphanToken}`);
 
-    expect(response.statusCode).toBe(404);
+    expect(response.statusCode).toBe(401);
     expect(response.body).toEqual({ ok: false, error: 'user not found' });
   });
 });

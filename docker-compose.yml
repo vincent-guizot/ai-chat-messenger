@@ -29,21 +29,15 @@ services:
     # ports:
     #   - "127.0.0.1:5432:5432"
 
-  backend:
+  # Service AI (memanggil Ollama / Groq / Hugging Face). Tidak memakai database.
+  aichat:
     build:
-      context: ./backend
+      context: ./backend-aichat
       target: runtime
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
     environment:
-      PORT: 3000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ai_chat}?schema=public
-      JWT_SECRET: ${JWT_SECRET:?isi JWT_SECRET di file .env}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
-      # Frontend dan API satu origin lewat Nginx, jadi CORS tidak diperlukan.
-      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      PORT: 3001
+      AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:-}
       DEFAULT_PROVIDER: ${DEFAULT_PROVIDER:-ollama}
       # Default: Ollama yang berjalan di mesin host. Dengan profile "ollama", ganti ke http://ollama:11434
       OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
@@ -57,6 +51,27 @@ services:
     extra_hosts:
       # Agar host.docker.internal juga berfungsi di Linux.
       - "host.docker.internal:host-gateway"
+
+  # API + Socket.IO + database. Balasan AI diminta ke service "aichat".
+  backend:
+    build:
+      context: ./backend-core
+      target: runtime
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      aichat:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ai_chat}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?isi JWT_SECRET di file .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      # Frontend dan API satu origin lewat Nginx, jadi CORS tidak diperlukan.
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      AI_SERVICE_URL: http://aichat:3001
+      AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:-}
 
   frontend:
     build:
@@ -87,7 +102,7 @@ services:
   backend-test:
     profiles: ["test"]
     build:
-      context: ./backend
+      context: ./backend-core
       target: test
     depends_on:
       db:

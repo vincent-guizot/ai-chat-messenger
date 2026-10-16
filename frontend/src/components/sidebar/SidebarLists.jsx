@@ -1,14 +1,16 @@
-import { useAuthStore } from '../../stores/authStore';
-import { toTypingInfo, useChatStore } from '../../stores/chatStore';
-import Avatar, { toPresenceStatus } from '../ui/Avatar';
+import { useAuthStore } from '@/stores/authStore';
+import { toTypingInfo, useChatStore } from '@/stores/chatStore';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import UserAvatar, { toPresenceStatus } from '@/components/shared/UserAvatar';
 import SidebarListItem from './SidebarListItem';
-import { formatLastSeen, formatTime, truncate } from '../../utils/formatters';
-import { findOtherUser, getConversationTitle, getLastMessage } from '../../utils/conversations';
+import { formatLastSeen, formatTime, truncate } from '@/utils/formatters';
+import { findOtherUser, getConversationTitle, getLastMessage } from '@/utils/conversations';
 
 const MAX_BADGE_COUNT = 9;
 
 function EmptyListMessage(props) {
-  return <p className="px-3 py-6 text-center text-sm leading-relaxed text-ink-muted">{props.children}</p>;
+  return <p className="px-3 py-6 text-center text-sm leading-relaxed text-muted-foreground">{props.children}</p>;
 }
 
 function LoadingRows() {
@@ -16,10 +18,10 @@ function LoadingRows() {
     <div className="space-y-1" aria-label="Loading">
       {[0, 1, 2].map((row) => (
         <div key={row} className="flex items-center gap-3 px-3 py-3">
-          <div className="h-12 w-12 animate-pulse rounded-full bg-line" />
+          <Skeleton className="size-10 rounded-full" />
           <div className="flex-1 space-y-2">
-            <div className="h-3 w-24 animate-pulse rounded bg-line" />
-            <div className="h-3 w-32 animate-pulse rounded bg-line/60" />
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-3 w-32 opacity-60" />
           </div>
         </div>
       ))}
@@ -37,9 +39,9 @@ function UnreadBadge(props) {
   }
 
   return (
-    <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-danger px-1 text-[11px] font-semibold text-white">
+    <Badge variant="destructive" className="h-5 min-w-5 px-1">
       {label}
-    </span>
+    </Badge>
   );
 }
 
@@ -79,7 +81,7 @@ function AssistantConversationItem(props) {
 
   if (typingInfo.assistant) {
     subtitle = 'Thinking...';
-    subtitleClassName = 'font-medium text-warning';
+    subtitleClassName = 'font-medium text-amber-600 dark:text-warning';
   } else if (lastMessage) {
     subtitle = truncate(lastMessage.content, 40);
   }
@@ -91,7 +93,7 @@ function AssistantConversationItem(props) {
 
   return (
     <SidebarListItem
-      avatar={<Avatar isAssistant size="lg" />}
+      avatar={<UserAvatar isAssistant size="md" />}
       title={getConversationTitle(conversation, null)}
       time={time}
       subtitle={subtitle}
@@ -171,7 +173,7 @@ function DirectConversationItem(props) {
 
   return (
     <SidebarListItem
-      avatar={<Avatar name={otherUserName} size="lg" status={toPresenceStatus(isOnline)} />}
+      avatar={<UserAvatar name={otherUserName} size="md" status={toPresenceStatus(isOnline)} />}
       title={getConversationTitle(conversation, otherUser)}
       time={time}
       subtitle={subtitle}
@@ -223,7 +225,7 @@ export function ContactList(props) {
   return props.contacts.map((contact) => (
     <SidebarListItem
       key={contact.id}
-      avatar={<Avatar name={contact.name} size="lg" status={toPresenceStatus(contact.online)} />}
+      avatar={<UserAvatar name={contact.name} size="md" status={toPresenceStatus(contact.online)} />}
       title={contact.name}
       subtitle={getPresenceText(contact)}
       subtitleClassName={getPresenceClassName(contact)}

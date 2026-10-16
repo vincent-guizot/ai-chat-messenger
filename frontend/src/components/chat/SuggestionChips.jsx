@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import Button from '../ui/Button';
+import { Button } from '@/components/ui/button';
 
 export const ASSISTANT_SUGGESTIONS = [
   'Explain this code',
@@ -17,7 +17,7 @@ export default function SuggestionChips(props) {
       className="flex flex-wrap gap-2 pl-[42px]"
     >
       {props.suggestions.map((suggestion) => (
-        <Button key={suggestion} variant="ai" size="pill" onClick={() => props.onSelect(suggestion)}>
+        <Button key={suggestion} variant="soft" size="pill" onClick={() => props.onSelect(suggestion)}>
           {suggestion}
         </Button>
       ))}

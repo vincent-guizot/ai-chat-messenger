@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
-import { ChevronsLeft, ChevronsRight, Plus, SquarePen, X } from 'lucide-react';
-import { cn } from '../../lib/cn';
-import { SIDEBAR_TABS, useUiStore } from '../../stores/uiStore';
-import { useChatStore } from '../../stores/chatStore';
+import { motion } from 'motion/react';
+import { ChevronsLeft, ChevronsRight, Plus, SquarePen } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { SIDEBAR_TABS, useUiStore } from '@/stores/uiStore';
+import { useChatStore } from '@/stores/chatStore';
 import {
   useContactsById,
   useContactsQuery,
@@ -12,14 +12,19 @@ import {
   useDeleteConversation,
   useOpenConversation,
   useOpenDirectConversation,
-} from '../../hooks/useChatData';
-import { useUnreadCountByConversation } from '../../hooks/useNotifications';
-import { isAssistantConversation, isDirectConversation } from '../../utils/conversations';
-import useMinuteTick from '../../hooks/useMinuteTick';
-import AppLogo from '../ui/AppLogo';
-import BrandName from '../ui/BrandName';
-import ConfirmDialog from '../ui/ConfirmDialog';
-import IconButton from '../ui/IconButton';
+} from '@/hooks/useChatData';
+import { useUnreadCountByConversation } from '@/hooks/useNotifications';
+import { isAssistantConversation, isDirectConversation } from '@/utils/conversations';
+import useMinuteTick from '@/hooks/useMinuteTick';
+import { Button } from '@/components/ui/button';
+import { Kbd } from '@/components/ui/kbd';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import AppLogo from '@/components/shared/AppLogo';
+import BrandName from '@/components/shared/BrandName';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
+import IconButton from '@/components/shared/IconButton';
 import SidebarNav from './SidebarNav';
 import UserFooter from './UserFooter';
 import { AssistantConversationList, ContactList, DirectConversationList } from './SidebarLists';
@@ -57,7 +62,7 @@ function SidebarDecoration() {
 }
 
 /**
- * Isi sidebar. Dipakai di dua tempat: sidebar tetap (layar besar) dan laci (layar kecil).
+ * Isi sidebar. Dipakai di dua tempat: sidebar tetap (layar besar) dan Sheet (layar kecil).
  */
 function SidebarContent(props) {
   const isCollapsed = props.isCollapsed;
@@ -80,7 +85,7 @@ function SidebarContent(props) {
   const openDirectConversation = useOpenDirectConversation();
   const deleteConversation = useDeleteConversation();
 
-  // Percakapan yang sedang menunggu konfirmasi hapus.
+  // Percakapan ({ id, title }) yang sedang menunggu konfirmasi hapus.
   const [conversationToDelete, setConversationToDelete] = useState(null);
 
   const conversations = conversationsQuery.data || EMPTY_LIST;
@@ -111,6 +116,11 @@ function SidebarContent(props) {
     }
   }
 
+  let plusLabel = 'Find someone to chat with';
+  if (activeTab === SIDEBAR_TABS.assistant) {
+    plusLabel = 'New AI chat';
+  }
+
   function confirmDeleteConversation() {
     if (!conversationToDelete) {
       return;
@@ -126,82 +136,67 @@ function SidebarContent(props) {
     deleteTitle = conversationToDelete.title;
   }
 
+  let logoSize = 'md';
+  if (isCollapsed) {
+    logoSize = 'sm';
+  }
+
   return (
-    <div className="relative flex h-full flex-col gap-3 overflow-hidden rounded-xl border border-line bg-surface px-3 py-4 text-ink shadow-card">
+    <div className="relative flex h-full flex-col gap-3 overflow-hidden px-3 py-4 text-foreground">
       <SidebarDecoration />
 
       {/* Logo & tombol ciutkan */}
       <div className={cn('relative flex items-center gap-3', isCollapsed && 'flex-col')}>
-        <AppLogo size={isCollapsed ? 'sm' : 'md'} />
+        <AppLogo size={logoSize} />
         {!isCollapsed && <BrandName className="flex-1" />}
 
-        {props.onClose && (
-          <IconButton variant="sidebar" size="sm" label="Close menu" onClick={props.onClose}>
-            <X className="h-5 w-5" />
-          </IconButton>
-        )}
-
-        {!props.onClose && (
-          <IconButton variant="sidebar" size="sm" label={collapseLabel} onClick={toggleSidebarCollapsed}>
-            <CollapseIcon className="h-5 w-5" />
+        {!props.isInsideSheet && (
+          <IconButton label={collapseLabel} size="icon-sm" onClick={toggleSidebarCollapsed}>
+            <CollapseIcon className="size-5" />
           </IconButton>
         )}
       </div>
 
       {/* Tombol chat AI baru */}
-      <button
-        type="button"
+      <Button
+        size="lg"
         onClick={() => createAiConversation.mutate()}
         disabled={createAiConversation.isPending}
         title="New Chat (Alt + N)"
-        className={cn(
-          'relative flex h-11 items-center gap-3 rounded-md bg-brand-600 px-4 text-base font-semibold text-white shadow-md transition-colors',
-          'hover:bg-brand-700 disabled:opacity-70',
-          isCollapsed && 'justify-center px-0',
-        )}
+        className={cn('relative justify-start gap-3 px-4 shadow-md', isCollapsed && 'justify-center px-0')}
       >
-        <SquarePen className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+        <SquarePen className="size-[18px]" aria-hidden="true" />
         {!isCollapsed && <span className="flex-1 text-left">New Chat</span>}
-        {!isCollapsed && (
-          <kbd className="rounded-sm bg-white/20 px-1.5 py-0.5 font-sans text-xs font-medium text-white">
-            Alt N
-          </kbd>
-        )}
-      </button>
+        {!isCollapsed && <Kbd>Alt N</Kbd>}
+      </Button>
 
       <div className="relative">
         <SidebarNav
-        activeTab={activeTab}
-        onChange={setActiveTab}
-        isCollapsed={isCollapsed}
-        onlineCount={onlineCount}
-        unreadDirectCount={unreadDirectCount}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          isCollapsed={isCollapsed}
+          onlineCount={onlineCount}
+          unreadDirectCount={unreadDirectCount}
         />
       </div>
 
-      <div className="relative h-px bg-line" />
+      <Separator className="relative" />
 
       {/* Daftar sesuai tab yang aktif */}
       <div className="relative flex min-h-0 flex-1 flex-col">
         {!isCollapsed && (
           <div className="mb-2 flex items-center justify-between px-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">{SECTION_TITLES[activeTab]}</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{SECTION_TITLES[activeTab]}</h2>
 
             {activeTab !== SIDEBAR_TABS.contacts && (
-              <IconButton
-                variant="ghost"
-                size="sm"
-                label={activeTab === SIDEBAR_TABS.assistant ? 'New AI chat' : 'Find someone to chat with'}
-                onClick={handlePlusClick}
-                className="-mr-2"
-              >
-                <Plus className="h-5 w-5" />
+              <IconButton label={plusLabel} size="icon-sm" onClick={handlePlusClick} className="-mr-2">
+                <Plus className="size-5" />
               </IconButton>
             )}
           </div>
         )}
 
-        <div className="min-h-0 flex-1 space-y-1 overflow-y-auto">
+        <ScrollArea className="min-h-0 flex-1" viewportClassName="[&>div]:space-y-1">
           {activeTab === SIDEBAR_TABS.assistant && (
             <AssistantConversationList
               conversations={assistantConversations}
@@ -234,7 +229,7 @@ function SidebarContent(props) {
               onStartChat={(userId) => openDirectConversation.mutate(userId)}
             />
           )}
-        </div>
+        </ScrollArea>
       </div>
 
       <div className="relative">
@@ -266,9 +261,9 @@ export default function Sidebar(props) {
 
   return (
     <>
-      {/* Layar besar: sidebar tetap di kiri */}
+      {/* Layar besar: sidebar tetap di kiri, berupa kartu terpisah dari area chat */}
       <motion.aside
-        className="hidden h-full shrink-0 overflow-hidden lg:block"
+        className="hidden h-full shrink-0 overflow-hidden rounded-xl border border-border bg-card shadow-card lg:block"
         initial={false}
         animate={{ width: desktopWidth }}
         transition={{ duration: 0.2, ease: 'easeInOut' }}
@@ -276,33 +271,14 @@ export default function Sidebar(props) {
         <SidebarContent isCollapsed={isSidebarCollapsed} onLogout={props.onLogout} />
       </motion.aside>
 
-      {/* Layar kecil: sidebar berupa laci yang bisa dibuka/tutup */}
-      <AnimatePresence>
-        {isMobileSidebarOpen && (
-          <div className="fixed inset-0 z-40 lg:hidden">
-            <motion.div
-              className="absolute inset-0 bg-ink/50"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setMobileSidebarOpen(false)}
-            />
-            <motion.aside
-              className="absolute inset-y-0 left-0 w-[min(300px,88vw)] p-2"
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-            >
-              <SidebarContent
-                isCollapsed={false}
-                onLogout={props.onLogout}
-                onClose={() => setMobileSidebarOpen(false)}
-              />
-            </motion.aside>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Layar kecil: sidebar berupa Sheet yang meluncur dari kiri */}
+      <Sheet open={isMobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+        <SheetContent side="left" showCloseButton className="w-[min(300px,88vw)] gap-0 p-0">
+          <SheetTitle className="sr-only">Menu</SheetTitle>
+          <SheetDescription className="sr-only">Chats, contacts, and account</SheetDescription>
+          <SidebarContent isCollapsed={false} isInsideSheet onLogout={props.onLogout} />
+        </SheetContent>
+      </Sheet>
     </>
   );
 }

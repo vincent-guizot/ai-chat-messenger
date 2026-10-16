@@ -1,12 +1,19 @@
 import { EllipsisVertical, LogOut, Menu, Moon, Search, SquarePen, Sun, Trash2, X } from 'lucide-react';
-import { useUiStore } from '../../stores/uiStore';
-import { formatLastSeen } from '../../utils/formatters';
-import { cn } from '../../lib/cn';
-import useMinuteTick from '../../hooks/useMinuteTick';
-import Avatar from '../ui/Avatar';
-import DropdownMenu from '../ui/DropdownMenu';
-import IconButton from '../ui/IconButton';
-import NotificationBell from '../notifications/NotificationBell';
+import { useUiStore } from '@/stores/uiStore';
+import { formatLastSeen } from '@/utils/formatters';
+import { cn } from '@/lib/utils';
+import useMinuteTick from '@/hooks/useMinuteTick';
+import { Input } from '@/components/ui/input';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import UserAvatar from '@/components/shared/UserAvatar';
+import IconButton from '@/components/shared/IconButton';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 /**
  * Teks & warna status di bawah judul, contoh:
@@ -21,7 +28,7 @@ function getStatus(props) {
   }
 
   if (props.isTyping) {
-    return { text: 'typing...', dotClass: 'bg-brand-600', textClass: 'text-brand-600 dark:text-brand-300' };
+    return { text: 'typing...', dotClass: 'bg-primary', textClass: 'text-primary dark:text-brand-300' };
   }
 
   if (props.isAssistant) {
@@ -33,7 +40,11 @@ function getStatus(props) {
   }
 
   if (props.otherUser) {
-    return { text: formatLastSeen(props.otherUser.lastSeenAt), dotClass: 'bg-ink-muted/60', textClass: 'text-ink-muted' };
+    return {
+      text: formatLastSeen(props.otherUser.lastSeenAt),
+      dotClass: 'bg-muted-foreground/60',
+      textClass: 'text-muted-foreground',
+    };
   }
 
   return { text: '', dotClass: null, textClass: '' };
@@ -41,26 +52,28 @@ function getStatus(props) {
 
 function MessageSearchField(props) {
   return (
-    <label className="hidden h-10 w-full max-w-64 items-center gap-2 rounded-md border border-line bg-canvas px-3 transition-colors focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-500/15 md:flex">
-      <Search className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden="true" />
-      <input
+    <div className="relative hidden w-full max-w-64 md:block">
+      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+
+      <Input
         value={props.value}
         onChange={(event) => props.onChange(event.target.value)}
         placeholder="Search messages..."
         aria-label="Search messages"
-        className="min-w-0 flex-1 bg-transparent text-sm text-ink placeholder:text-ink-muted focus:outline-none"
+        className="bg-background pl-9 pr-8"
       />
+
       {props.value !== '' && (
         <button
           type="button"
           onClick={() => props.onChange('')}
-          className="rounded-sm p-0.5 text-ink-muted hover:text-ink"
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm p-0.5 text-muted-foreground hover:text-foreground"
           aria-label="Clear search"
         >
-          <X className="h-4 w-4" />
+          <X className="size-4" />
         </button>
       )}
-    </label>
+    </div>
   );
 }
 
@@ -86,28 +99,20 @@ export default function ChatHeader(props) {
     otherUserName = props.otherUser.name;
   }
 
-  const menuItems = [{ label: 'New AI chat', icon: SquarePen, onSelect: props.onNewChat }];
-
-  if (props.hasConversation) {
-    menuItems.push({ label: 'Delete chat', icon: Trash2, onSelect: props.onDeleteChat, danger: true });
-  }
-
-  menuItems.push({ label: 'Log out', icon: LogOut, onSelect: props.onLogout, danger: true });
-
   return (
-    <header className="flex h-16 shrink-0 items-center gap-3 border-b border-line bg-surface px-4">
-      <IconButton variant="ghost" size="md" label="Open menu" className="lg:hidden" onClick={() => setMobileSidebarOpen(true)}>
-        <Menu className="h-[18px] w-[18px]" />
+    <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-card px-4">
+      <IconButton label="Open menu" className="lg:hidden" onClick={() => setMobileSidebarOpen(true)}>
+        <Menu className="size-[18px]" />
       </IconButton>
 
       {props.hasConversation && (
         <>
-          <Avatar isAssistant={props.isAssistant} name={otherUserName} size="md" />
+          <UserAvatar isAssistant={props.isAssistant} name={otherUserName} size="md" />
 
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-base font-semibold leading-tight text-ink">{props.title}</h1>
+            <h1 className="truncate text-base font-semibold leading-tight text-foreground">{props.title}</h1>
             <p className={cn('flex items-center gap-1.5 text-xs', status.textClass)}>
-              {status.dotClass && <span className={cn('h-2 w-2 shrink-0 rounded-full', status.dotClass)} aria-hidden="true" />}
+              {status.dotClass && <span className={cn('size-2 shrink-0 rounded-full', status.dotClass)} aria-hidden="true" />}
               <span className="truncate">{status.text}</span>
             </p>
           </div>
@@ -120,18 +125,38 @@ export default function ChatHeader(props) {
 
       <NotificationBell />
 
-      <IconButton variant="card" size="md" label={themeLabel} onClick={toggleTheme}>
-        <ThemeIcon className="h-[18px] w-[18px]" />
+      <IconButton label={themeLabel} variant="outline" onClick={toggleTheme}>
+        <ThemeIcon className="size-[18px]" />
       </IconButton>
 
-      <DropdownMenu
-        items={menuItems}
-        trigger={(isOpen, toggle) => (
-          <IconButton variant="card" size="md" label="More options" onClick={toggle} aria-expanded={isOpen}>
-            <EllipsisVertical className="h-[18px] w-[18px]" />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <IconButton label="More options" variant="outline">
+            <EllipsisVertical className="size-[18px]" />
           </IconButton>
-        )}
-      />
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={props.onNewChat}>
+            <SquarePen />
+            New AI chat
+          </DropdownMenuItem>
+
+          {props.hasConversation && (
+            <DropdownMenuItem variant="destructive" onSelect={props.onDeleteChat}>
+              <Trash2 />
+              Delete chat
+            </DropdownMenuItem>
+          )}
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem variant="destructive" onSelect={props.onLogout}>
+            <LogOut />
+            Log out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </header>
   );
 }

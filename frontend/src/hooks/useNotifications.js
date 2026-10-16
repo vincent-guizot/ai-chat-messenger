@@ -1,10 +1,10 @@
 import { useEffect, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import NotificationApi from '../api/NotificationApi';
-import { queryKeys } from '../lib/queryClient';
-import NotificationCache from '../lib/notificationCache';
-import { useAuthStore } from '../stores/authStore';
-import { useChatStore } from '../stores/chatStore';
+import NotificationApi from '@/api/NotificationApi';
+import { queryKeys } from '@/lib/queryClient';
+import NotificationCache from '@/lib/notificationCache';
+import { useAuthStore } from '@/stores/authStore';
+import { useChatStore } from '@/stores/chatStore';
 
 const EMPTY_RESULT = { notifications: [], unreadCount: 0 };
 
@@ -13,7 +13,7 @@ export function useNotificationsQuery() {
 
   const query = useQuery({
     queryKey: queryKeys.notifications,
-    queryFn: () => NotificationApi.getAll(token),
+    queryFn: NotificationApi.getAll,
     enabled: Boolean(token),
   });
 
@@ -47,11 +47,10 @@ export function useUnreadCountByConversation() {
 }
 
 export function useMarkNotificationRead() {
-  const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (notificationId) => NotificationApi.markAsRead(notificationId, token),
+    mutationFn: (notificationId) => NotificationApi.markAsRead(notificationId),
     onMutate: (notificationId) => {
       // Langsung ubah tampilan tanpa menunggu server.
       NotificationCache.markAsRead(queryClient, (notification) => notification.id === notificationId);
@@ -60,11 +59,10 @@ export function useMarkNotificationRead() {
 }
 
 export function useMarkAllNotificationsRead() {
-  const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (conversationId) => NotificationApi.markAllAsRead(conversationId, token),
+    mutationFn: (conversationId) => NotificationApi.markAllAsRead(conversationId),
     onMutate: (conversationId) => {
       NotificationCache.markAsRead(queryClient, (notification) => {
         if (!conversationId) {

@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import socket from '../lib/socket';
-import { queryKeys } from '../lib/queryClient';
-import ChatCache from '../lib/chatCache';
-import NotificationCache from '../lib/notificationCache';
-import { useAuthStore } from '../stores/authStore';
-import { useChatStore } from '../stores/chatStore';
+import { toast } from 'sonner';
+import socket from '@/lib/socket';
+import { queryKeys } from '@/lib/queryClient';
+import ChatCache from '@/lib/chatCache';
+import NotificationCache from '@/lib/notificationCache';
+import { useAuthStore } from '@/stores/authStore';
+import { useChatStore } from '@/stores/chatStore';
 
 // Jika event "berhenti mengetik" tidak pernah datang (mis. koneksi putus), indikator dihapus otomatis.
 const TYPING_EXPIRE_MS = 6000;
@@ -56,7 +57,7 @@ export default function useChatSocket() {
         errorText = payload.message;
       }
 
-      chatStore.showToast(errorText, 'error');
+      toast.error(errorText);
     }
 
     function handleNewMessage(message) {
@@ -134,7 +135,7 @@ export default function useChatSocket() {
       const isFromActiveConversation = notification.conversationId === activeConversationId;
 
       if (!isFromActiveConversation) {
-        useChatStore.getState().showToast(notification.title, 'info');
+        toast.info(notification.title, { description: notification.body });
       }
     }
 

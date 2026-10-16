@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import { useAuthStore } from './stores/authStore';
-import { useUiStore } from './stores/uiStore';
-import LoginPage from './pages/LoginPage';
-import ChatPage from './pages/ChatPage';
+import { useAuthStore } from '@/stores/authStore';
+import { useUiStore } from '@/stores/uiStore';
+import LoginPage from '@/pages/LoginPage';
+import ChatPage from '@/pages/ChatPage';
 
 /**
  * Menerapkan tema (terang/gelap) dengan menambah/menghapus class "dark" di <html>.

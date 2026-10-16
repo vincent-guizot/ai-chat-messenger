@@ -1,62 +1,102 @@
-import { useAuthStore } from '../stores/authStore';
+import axios from 'axios';
+import { useAuthStore } from '@/stores/authStore';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
+const REQUEST_TIMEOUT_MS = 30000;
 
 /**
- * Pembungkus fetch untuk semua request ke backend.
- * Backend selalu membalas dengan format { ok: boolean, error?: string, ... }.
+ * Satu instance axios untuk seluruh request ke backend.
+ *
+ * - Header "Authorization: Bearer <token>" dipasang otomatis dari authStore.
+ * - Backend selalu membalas { ok: boolean, error?: string, ... }; interceptor di bawah
+ *   mengubah balasan gagal menjadi Error dengan pesan yang siap ditampilkan.
+ * - Balasan 401 (token kedaluwarsa / tidak valid) langsung mengeluarkan user ke halaman login.
  */
-class ApiClient {
-  static async request(path, options) {
-    const requestOptions = options || {};
-    const headers = {
-      'Content-Type': 'application/json',
-    };
+const apiClient = axios.create({
+  baseURL: API_BASE,
+  timeout: REQUEST_TIMEOUT_MS,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-    if (requestOptions.token) {
-      headers.Authorization = `Bearer ${requestOptions.token}`;
+apiClient.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().token;
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
+});
+
+/**
+ * Mengambil pesan error yang paling berguna dari sebuah error axios.
+ */
+function getErrorMessage(error) {
+  const response = error.response;
+
+  if (response && response.data && response.data.error) {
+    return response.data.error;
+  }
+
+  if (error.code === 'ECONNABORTED') {
+    return 'Request timed out. Please try again.';
+  }
+
+  if (!response) {
+    return 'Cannot reach the server. Check your connection.';
+  }
+
+  return error.message || 'Request failed';
+}
+
+apiClient.interceptors.response.use(
+  (response) => {
+    const data = response.data;
+
+    if (data && data.ok === false) {
+      return Promise.reject(new Error(data.error || 'Request failed'));
     }
 
-    const fetchOptions = {
-      method: requestOptions.method || 'GET',
-      headers: headers,
-    };
+    return response;
+  },
+  (error) => {
+    const response = error.response;
+    const hadToken = Boolean(useAuthStore.getState().token);
 
-    if (requestOptions.body !== undefined) {
-      fetchOptions.body = JSON.stringify(requestOptions.body);
-    }
-
-    const response = await fetch(`${API_BASE}${path}`, fetchOptions);
-
-    // Token kedaluwarsa / tidak valid -> keluarkan user ke halaman login.
-    if (response.status === 401 && requestOptions.token) {
+    if (response && response.status === 401 && hadToken) {
       useAuthStore.getState().clearAuth();
     }
 
-    const data = await response.json();
+    return Promise.reject(new Error(getErrorMessage(error)));
+  },
+);
 
-    if (!data.ok) {
-      throw new Error(data.error || 'Request failed');
-    }
-
-    return data;
+/**
+ * Pembungkus tipis agar pemanggil langsung mendapat body JSON (response.data).
+ */
+class ApiClient {
+  static async get(path, config) {
+    const response = await apiClient.get(path, config);
+    return response.data;
   }
 
-  static get(path, token) {
-    return ApiClient.request(path, { method: 'GET', token: token });
+  static async post(path, body, config) {
+    const response = await apiClient.post(path, body, config);
+    return response.data;
   }
 
-  static post(path, body, token) {
-    return ApiClient.request(path, { method: 'POST', body: body, token: token });
+  static async patch(path, body, config) {
+    const response = await apiClient.patch(path, body, config);
+    return response.data;
   }
 
-  static delete(path, token) {
-    return ApiClient.request(path, { method: 'DELETE', token: token });
-  }
-
-  static patch(path, body, token) {
-    return ApiClient.request(path, { method: 'PATCH', body: body, token: token });
+  static async delete(path, config) {
+    const response = await apiClient.delete(path, config);
+    return response.data;
   }
 }
 
+export { apiClient };
 export default ApiClient;

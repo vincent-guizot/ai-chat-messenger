@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import socket from '../lib/socket';
-import ChatCache from '../lib/chatCache';
-import { useAuthStore } from '../stores/authStore';
+import socket from '@/lib/socket';
+import ChatCache from '@/lib/chatCache';
+import { useAuthStore } from '@/stores/authStore';
 
 // Setelah berhenti mengetik selama ini, kirim "typing: false".
 const TYPING_IDLE_MS = 2000;

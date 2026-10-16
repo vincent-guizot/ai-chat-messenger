@@ -1,6 +1,6 @@
 import { Fragment } from 'react';
-import { cn } from '../../lib/cn';
-import { parseInline, parseMarkdown } from '../../utils/markdown';
+import { cn } from '@/lib/utils';
+import { parseInline, parseMarkdown } from '@/utils/markdown';
 import CodeBlock from './CodeBlock';
 
 function InlineText(props) {
@@ -54,7 +54,7 @@ export default function MessageContent(props) {
 
         if (block.type === 'heading') {
           return (
-            <h3 key={index} className="pt-1 text-sm font-semibold text-ink">
+            <h3 key={index} className="pt-1 text-sm font-semibold text-foreground">
               <InlineText text={block.text} isOwn={props.isOwn} />
             </h3>
           );

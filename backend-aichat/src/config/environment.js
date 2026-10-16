@@ -1,6 +1,7 @@
 const dotenv = require("dotenv");
 const { z } = require("zod");
-dotenv.config({ override: process.env.NODE_ENV !== "production" });
+// Variabel yang sudah ada di environment (shell, Render, test) menang atas file .env.
+dotenv.config();
 
 /**
  * Menghapus slash di akhir URL supaya penggabungan path tidak menghasilkan "//".
@@ -40,7 +41,7 @@ const environmentSchema = z.object({
     .default("https://api.groq.com/openai/v1")
     .transform(stripTrailingSlash),
   OPENAI_API_KEY: z.string().default(""),
-  OPENAI_MODEL: z.string().default("llama-3.1-8b-instant"),
+  OPENAI_MODEL: z.string().default("openai/gpt-oss-20b"),
 
   HUGGINGFACE_API_TOKEN: z.string().default(""),
   HUGGINGFACE_MODEL: z.string().default("gpt2"),

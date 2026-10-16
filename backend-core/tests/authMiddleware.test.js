@@ -3,6 +3,7 @@ const jsonWebToken = require('jsonwebtoken');
 const app = require('../src/app');
 const Environment = require('../src/config/environment');
 const TestHelpers = require('./helpers/testHelpers');
+const prisma = require('../prisma/prisma');
 
 afterAll(async () => {
   await TestHelpers.disconnect();
@@ -67,6 +68,18 @@ describe('Authentication middleware', () => {
 
     expect(response.statusCode).toBe(401);
     expect(response.body.error).toBe('invalid token');
+  });
+
+  test('rejects a valid token whose user no longer exists in the database', async () => {
+    const signup = await TestHelpers.signupUser('deleted-user@example.com', 'password123', 'Deleted');
+
+    // Simulasi database diganti / user dihapus setelah token diterbitkan.
+    await prisma.user.delete({ where: { id: signup.user.id } });
+
+    const response = await request(app).get('/api/users/me').set('Authorization', `Bearer ${signup.token}`);
+
+    expect(response.statusCode).toBe(401);
+    expect(response.body).toEqual({ ok: false, error: 'user not found' });
   });
 
   test('accepts a valid token', async () => {

@@ -5,21 +5,52 @@ const TABLE_DOES_NOT_EXIST = "P2021";
 const CANNOT_REACH_DATABASE = "P1001";
 const DATABASE_DOES_NOT_EXIST = "P1003";
 
+// Database managed (mis. Neon free tier) "tidur" saat idle dan butuh beberapa detik untuk bangun,
+// jadi koneksi pertama dicoba ulang beberapa kali sebelum menyerah.
+const CONNECT_ATTEMPTS = 5;
+const RETRY_DELAY_MS = 3000;
+
+function wait(milliseconds) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
+}
+
 class DatabaseCheckService {
   /**
    * Memastikan database bisa diakses dan tabel sudah dibuat oleh migrasi.
    * Jika belum, menampilkan pesan yang jelas lalu menghentikan server.
    */
   static async ensureReady() {
-    try {
-      await prisma.user.count();
-    } catch (error) {
-      console.error(
-        "\n[Database] " + DatabaseCheckService.describeError(error) + "\n",
-      );
-      console.error("Detail:", error.message);
-      process.exit(1);
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= CONNECT_ATTEMPTS; attempt += 1) {
+      try {
+        await prisma.user.count();
+        return;
+      } catch (error) {
+        lastError = error;
+
+        // Tabel belum ada bukan masalah koneksi; mencoba ulang tidak akan membantu.
+        if (error.code === TABLE_DOES_NOT_EXIST) {
+          break;
+        }
+
+        if (attempt < CONNECT_ATTEMPTS) {
+          console.warn(
+            `[Database] Belum bisa terhubung (percobaan ${attempt}/${CONNECT_ATTEMPTS}), ` +
+              `mencoba lagi dalam ${RETRY_DELAY_MS / 1000} detik...`,
+          );
+          await wait(RETRY_DELAY_MS);
+        }
+      }
     }
+
+    console.error(
+      "\n[Database] " + DatabaseCheckService.describeError(lastError) + "\n",
+    );
+    console.error("Detail:", lastError.message);
+    process.exit(1);
   }
 
   static describeError(error) {

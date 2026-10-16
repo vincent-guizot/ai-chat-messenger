@@ -9,6 +9,10 @@ const ErrorMiddleware = require("./middlewares/ErrorMiddleware");
  */
 const app = express();
 
+// Di Render/Vercel aplikasi berjalan di belakang reverse proxy; ini membuat
+// request.ip dan request.protocol membaca header X-Forwarded-* dengan benar.
+app.set("trust proxy", 1);
+
 app.use(cors({ origin: Environment.corsOrigin }));
 app.use(express.json());
 

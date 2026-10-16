@@ -1,5 +1,5 @@
-const dotenv = require('dotenv');
-const { z } = require('zod');
+const dotenv = require("dotenv");
+const { z } = require("zod");
 
 dotenv.config();
 
@@ -7,7 +7,7 @@ dotenv.config();
  * Menghapus slash di akhir URL supaya penggabungan path tidak menghasilkan "//".
  */
 function stripTrailingSlash(value) {
-  return value.replace(/\/+$/, '');
+  return value.replace(/\/+$/, "");
 }
 
 /**
@@ -15,28 +15,40 @@ function stripTrailingSlash(value) {
  * supaya baris seperti `OPENAI_API_KEY=` di .env tidak dianggap sebagai key.
  */
 const environmentSchema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  NODE_ENV: z
+    .enum(["development", "test", "production"])
+    .default("development"),
   PORT: z.coerce.number().int().positive().default(3001),
-  CORS_ORIGIN: z.string().default('*'),
+  CORS_ORIGIN: z.string().default("*"),
   // Token bersama dengan backend-core. Kosong berarti endpoint tidak memerlukan token.
-  AI_SERVICE_TOKEN: z.string().default(''),
+  AI_SERVICE_TOKEN: z.string().default(""),
 
-  DEFAULT_PROVIDER: z.enum(['ollama', 'openai', 'huggingface']).default('ollama'),
+  DEFAULT_PROVIDER: z
+    .enum(["ollama", "openai", "huggingface"])
+    .default("ollama"),
 
-  OLLAMA_URL: z.string().url().default('http://localhost:11434').transform(stripTrailingSlash),
-  OLLAMA_MODEL: z.string().default('llama3.1'),
+  OLLAMA_URL: z
+    .string()
+    .url()
+    .default("http://localhost:11434")
+    .transform(stripTrailingSlash),
+  OLLAMA_MODEL: z.string().default("llama3.1"),
 
   // Provider kompatibel OpenAI (Groq, Cerebras, OpenRouter, Mistral, dll.).
-  OPENAI_BASE_URL: z.string().url().default('https://api.groq.com/openai/v1').transform(stripTrailingSlash),
-  OPENAI_API_KEY: z.string().default(''),
-  OPENAI_MODEL: z.string().default('llama-3.1-8b-instant'),
+  OPENAI_BASE_URL: z
+    .string()
+    .url()
+    .default("https://api.groq.com/openai/v1")
+    .transform(stripTrailingSlash),
+  OPENAI_API_KEY: z.string().default(""),
+  OPENAI_MODEL: z.string().default("llama-3.1-8b-instant"),
 
-  HUGGINGFACE_API_TOKEN: z.string().default(''),
-  HUGGINGFACE_MODEL: z.string().default('gpt2'),
+  HUGGINGFACE_API_TOKEN: z.string().default(""),
+  HUGGINGFACE_MODEL: z.string().default("gpt2"),
   HUGGINGFACE_API_URL: z
     .string()
     .url()
-    .default('https://api-inference.huggingface.co/models')
+    .default("https://api-inference.huggingface.co/models")
     .transform(stripTrailingSlash),
 });
 
@@ -50,7 +62,7 @@ function loadEnvironment() {
   for (const key of Object.keys(environmentSchema.shape)) {
     const value = process.env[key];
 
-    if (value !== undefined && value !== '') {
+    if (value !== undefined && value !== "") {
       rawEnvironment[key] = value;
     }
   }
@@ -58,10 +70,10 @@ function loadEnvironment() {
   const result = environmentSchema.safeParse(rawEnvironment);
 
   if (!result.success) {
-    console.error('Invalid environment configuration:');
+    console.error("Invalid environment configuration:");
 
     for (const issue of result.error.issues) {
-      console.error(`  - ${issue.path.join('.')}: ${issue.message}`);
+      console.error(`  - ${issue.path.join(".")}: ${issue.message}`);
     }
 
     process.exit(1);
@@ -133,11 +145,11 @@ class Environment {
    * Nama model yang sedang aktif, mengikuti DEFAULT_PROVIDER. Dipakai oleh /api/health.
    */
   static get activeModel() {
-    if (config.DEFAULT_PROVIDER === 'openai') {
+    if (config.DEFAULT_PROVIDER === "openai") {
       return config.OPENAI_MODEL;
     }
 
-    if (config.DEFAULT_PROVIDER === 'huggingface') {
+    if (config.DEFAULT_PROVIDER === "huggingface") {
       return config.HUGGINGFACE_MODEL;
     }
 

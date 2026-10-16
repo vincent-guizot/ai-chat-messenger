@@ -1,5 +1,5 @@
-const AiProviderService = require('../services/AiProviderService');
-const HttpError = require('../utils/HttpError');
+const AiProviderService = require("../services/AiProviderService");
+const HttpError = require("../utils/HttpError");
 
 class AiController {
   /**
@@ -24,21 +24,25 @@ class AiController {
           const retryAfter = AiController.readRetryAfterSeconds(error);
 
           console.error(
-            `[ai:quota] limit habis: ${providerMessage}` + (retryAfter ? ` (retry-after: ${retryAfter}s)` : '')
+            `[ai:quota] limit habis: ${providerMessage}` +
+              (retryAfter ? ` (retry-after: ${retryAfter}s)` : ""),
           );
 
-          const extra = { code: 'ai_quota_exceeded' };
+          const extra = { code: "ai_quota_exceeded" };
 
           if (retryAfter) {
             extra.retryAfter = retryAfter;
           }
 
-          throw HttpError.tooManyRequests('AI quota exhausted, please try again later', extra);
+          throw HttpError.tooManyRequests(
+            "AI quota exhausted, please try again later",
+            extra,
+          );
         }
 
         // Kegagalan provider lainnya bukan kesalahan client maupun bug service ini,
         // jadi dilaporkan sebagai 502 dengan pesan yang bisa ditampilkan ke user.
-        console.error('[ai:reply] provider error:', error.message);
+        console.error("[ai:reply] provider error:", error.message);
         throw HttpError.badGateway(providerMessage);
       }
 
@@ -66,11 +70,11 @@ class AiController {
   static readRetryAfterSeconds(error) {
     const headers = error.response && error.response.headers;
 
-    if (!headers || headers['retry-after'] === undefined) {
+    if (!headers || headers["retry-after"] === undefined) {
       return null;
     }
 
-    const seconds = Number(headers['retry-after']);
+    const seconds = Number(headers["retry-after"]);
 
     if (!Number.isFinite(seconds) || seconds < 0) {
       return null;
@@ -89,24 +93,24 @@ class AiController {
     if (providerResponse && providerResponse.data) {
       const data = providerResponse.data;
 
-      if (data.error && typeof data.error.message === 'string') {
+      if (data.error && typeof data.error.message === "string") {
         return data.error.message;
       }
 
-      if (typeof data.error === 'string') {
+      if (typeof data.error === "string") {
         return data.error;
       }
     }
 
-    if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-      return 'AI provider timed out';
+    if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
+      return "AI provider timed out";
     }
 
     if (error.message) {
       return error.message;
     }
 
-    return 'generation failed';
+    return "generation failed";
   }
 }
 

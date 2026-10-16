@@ -1,4 +1,4 @@
-const Environment = require('../config/environment');
+const Environment = require("../config/environment");
 
 class AuthMiddleware {
   /**
@@ -13,17 +13,17 @@ class AuthMiddleware {
       return next();
     }
 
-    const authorizationHeader = request.headers.authorization || '';
-    const bearerPrefix = 'Bearer ';
+    const authorizationHeader = request.headers.authorization || "";
+    const bearerPrefix = "Bearer ";
 
     if (!authorizationHeader.startsWith(bearerPrefix)) {
-      return response.status(401).json({ ok: false, error: 'missing token' });
+      return response.status(401).json({ ok: false, error: "missing token" });
     }
 
     const token = authorizationHeader.slice(bearerPrefix.length);
 
     if (token !== expectedToken) {
-      return response.status(401).json({ ok: false, error: 'invalid token' });
+      return response.status(401).json({ ok: false, error: "invalid token" });
     }
 
     return next();

@@ -1,5 +1,5 @@
-const axios = require('axios');
-const Environment = require('../config/environment');
+const axios = require("axios");
+const Environment = require("../config/environment");
 
 // Model AI bisa lambat (terutama Ollama di CPU), jadi timeout-nya dibuat panjang.
 const REQUEST_TIMEOUT_MS = 120000;
@@ -8,7 +8,7 @@ const DEFAULT_MAX_NEW_TOKENS = 512;
 const LOW_QUOTA_RATIO = 0.1;
 
 const SYSTEM_PROMPT =
-  'You are a helpful AI Assistant in a chat app. Reply in the same language the user writes in, and keep answers clear and concise.';
+  "You are a helpful AI Assistant in a chat app. Reply in the same language the user writes in, and keep answers clear and concise.";
 
 /**
  * Pembungkus untuk penyedia model AI: Ollama, Hugging Face, dan provider
@@ -25,23 +25,29 @@ class AiProviderService {
   static async generate(messages) {
     const provider = Environment.aiProvider;
 
-    if (provider === 'openai') {
+    if (provider === "openai") {
       const model = Environment.openAiModel;
-      const text = await AiProviderService.generateWithOpenAiCompatible(messages, model);
+      const text = await AiProviderService.generateWithOpenAiCompatible(
+        messages,
+        model,
+      );
       return { text: text, provider: provider, model: model };
     }
 
     const prompt = AiProviderService.buildPrompt(messages);
 
-    if (provider === 'huggingface') {
+    if (provider === "huggingface") {
       const model = Environment.huggingFaceModel;
-      const text = await AiProviderService.generateWithHuggingFace(prompt, model);
+      const text = await AiProviderService.generateWithHuggingFace(
+        prompt,
+        model,
+      );
       return { text: text, provider: provider, model: model };
     }
 
     const model = Environment.ollamaModel;
     const text = await AiProviderService.generateWithOllama(prompt, model);
-    return { text: text, provider: 'ollama', model: model };
+    return { text: text, provider: "ollama", model: model };
   }
 
   /**
@@ -53,18 +59,18 @@ class AiProviderService {
    */
   static buildPrompt(messages) {
     const lines = messages.map((message) => {
-      let speaker = 'Assistant';
+      let speaker = "Assistant";
 
-      if (message.role === 'user') {
-        speaker = 'User';
+      if (message.role === "user") {
+        speaker = "User";
       }
 
       return `${speaker}: ${message.content}`;
     });
 
-    lines.push('Assistant:');
+    lines.push("Assistant:");
 
-    return lines.join('\n');
+    return lines.join("\n");
   }
 
   static async generateWithOllama(prompt, model) {
@@ -79,7 +85,9 @@ class AiProviderService {
       },
     };
 
-    const response = await axios.post(url, requestBody, { timeout: REQUEST_TIMEOUT_MS });
+    const response = await axios.post(url, requestBody, {
+      timeout: REQUEST_TIMEOUT_MS,
+    });
     const data = response.data;
 
     if (data && data.response) {
@@ -96,14 +104,14 @@ class AiProviderService {
     const apiKey = Environment.openAiApiKey;
 
     if (!apiKey) {
-      throw new Error('OPENAI_API_KEY not set in env');
+      throw new Error("OPENAI_API_KEY not set in env");
     }
 
     const url = `${Environment.openAiBaseUrl}/chat/completions`;
 
     const requestBody = {
       model: model,
-      messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
+      messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
       max_tokens: DEFAULT_MAX_NEW_TOKENS,
     };
 
@@ -145,14 +153,24 @@ class AiProviderService {
     const usage = data && data.usage;
 
     if (usage && usage.total_tokens !== undefined) {
-      parts.push(`tokens prompt/jawaban/total=${usage.prompt_tokens}/${usage.completion_tokens}/${usage.total_tokens}`);
+      parts.push(
+        `tokens prompt/jawaban/total=${usage.prompt_tokens}/${usage.completion_tokens}/${usage.total_tokens}`,
+      );
     }
 
     const safeHeaders = headers || {};
-    const limitRequests = AiProviderService.readNumber(safeHeaders['x-ratelimit-limit-requests']);
-    const remainingRequests = AiProviderService.readNumber(safeHeaders['x-ratelimit-remaining-requests']);
-    const limitTokens = AiProviderService.readNumber(safeHeaders['x-ratelimit-limit-tokens']);
-    const remainingTokens = AiProviderService.readNumber(safeHeaders['x-ratelimit-remaining-tokens']);
+    const limitRequests = AiProviderService.readNumber(
+      safeHeaders["x-ratelimit-limit-requests"],
+    );
+    const remainingRequests = AiProviderService.readNumber(
+      safeHeaders["x-ratelimit-remaining-requests"],
+    );
+    const limitTokens = AiProviderService.readNumber(
+      safeHeaders["x-ratelimit-limit-tokens"],
+    );
+    const remainingTokens = AiProviderService.readNumber(
+      safeHeaders["x-ratelimit-remaining-tokens"],
+    );
 
     if (remainingTokens !== null) {
       parts.push(`sisa token/menit=${remainingTokens}/${limitTokens}`);
@@ -166,14 +184,19 @@ class AiProviderService {
       return;
     }
 
-    let line = `[ai:usage] model=${model} ${parts.join(' | ')}`;
+    let line = `[ai:usage] model=${model} ${parts.join(" | ")}`;
 
     const requestsLow =
-      remainingRequests !== null && limitRequests && remainingRequests / limitRequests <= LOW_QUOTA_RATIO;
-    const tokensLow = remainingTokens !== null && limitTokens && remainingTokens / limitTokens <= LOW_QUOTA_RATIO;
+      remainingRequests !== null &&
+      limitRequests &&
+      remainingRequests / limitRequests <= LOW_QUOTA_RATIO;
+    const tokensLow =
+      remainingTokens !== null &&
+      limitTokens &&
+      remainingTokens / limitTokens <= LOW_QUOTA_RATIO;
 
     if (requestsLow || tokensLow) {
-      line += ' | PERINGATAN: kuota hampir habis';
+      line += " | PERINGATAN: kuota hampir habis";
     }
 
     console.log(line);
@@ -183,7 +206,7 @@ class AiProviderService {
    * Mengubah nilai header (string) menjadi angka, atau null jika tidak ada / bukan angka.
    */
   static readNumber(value) {
-    if (value === undefined || value === null || value === '') {
+    if (value === undefined || value === null || value === "") {
       return null;
     }
 
@@ -200,7 +223,7 @@ class AiProviderService {
     const token = Environment.huggingFaceToken;
 
     if (!token) {
-      throw new Error('HUGGINGFACE_API_TOKEN not set in env');
+      throw new Error("HUGGINGFACE_API_TOKEN not set in env");
     }
 
     const url = `${Environment.huggingFaceApiUrl}/${model}`;
@@ -233,7 +256,7 @@ class AiProviderService {
       return data.generated_text;
     }
 
-    if (typeof data === 'string') {
+    if (typeof data === "string") {
       return data;
     }
 

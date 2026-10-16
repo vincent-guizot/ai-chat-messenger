@@ -1,4 +1,4 @@
-const HttpError = require('../utils/HttpError');
+const HttpError = require("../utils/HttpError");
 
 class ValidationMiddleware {
   /**
@@ -11,7 +11,11 @@ class ValidationMiddleware {
       const result = schema.safeParse(request.body);
 
       if (!result.success) {
-        return next(HttpError.badRequest(ValidationMiddleware.firstIssueMessage(result.error)));
+        return next(
+          HttpError.badRequest(
+            ValidationMiddleware.firstIssueMessage(result.error),
+          ),
+        );
       }
 
       request.body = result.data;
@@ -28,7 +32,11 @@ class ValidationMiddleware {
       const result = schema.safeParse(request.params);
 
       if (!result.success) {
-        return next(HttpError.badRequest(ValidationMiddleware.firstIssueMessage(result.error)));
+        return next(
+          HttpError.badRequest(
+            ValidationMiddleware.firstIssueMessage(result.error),
+          ),
+        );
       }
 
       request.params = result.data;
@@ -47,7 +55,7 @@ class ValidationMiddleware {
       return firstIssue.message;
     }
 
-    return 'invalid request';
+    return "invalid request";
   }
 }
 

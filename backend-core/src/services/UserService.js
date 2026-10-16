@@ -1,10 +1,10 @@
-const bcrypt = require('bcrypt');
-const prisma = require('../../prisma/prisma');
-const PresenceService = require('./PresenceService');
+const bcrypt = require("bcrypt");
+const prisma = require("../../prisma/prisma");
+const PresenceService = require("./PresenceService");
 
 const PASSWORD_SALT_ROUNDS = 10;
-const ASSISTANT_EMAIL = 'assistant@ai-chat.local';
-const ASSISTANT_NAME = 'AI Assistant';
+const ASSISTANT_EMAIL = "assistant@ai-chat.local";
+const ASSISTANT_NAME = "AI Assistant";
 
 class UserService {
   static async findByEmail(email) {
@@ -43,7 +43,7 @@ class UserService {
       data: {
         email: ASSISTANT_EMAIL,
         name: ASSISTANT_NAME,
-        passwordHash: 'ai-bot-placeholder',
+        passwordHash: "ai-bot-placeholder",
       },
     });
   }
@@ -64,7 +64,7 @@ class UserService {
         id: { not: currentUserId },
         email: { not: ASSISTANT_EMAIL },
       },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
 
     const contacts = users.map(UserService.toPublicUser);

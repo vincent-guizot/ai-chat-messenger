@@ -1,9 +1,9 @@
-const http = require('http');
-const { Server } = require('socket.io');
-const Environment = require('./config/environment');
-const app = require('./app');
-const ChatSocket = require('./sockets/ChatSocket');
-const DatabaseCheckService = require('./services/DatabaseCheckService');
+const http = require("http");
+const { Server } = require("socket.io");
+const Environment = require("./config/environment");
+const app = require("./app");
+const ChatSocket = require("./sockets/ChatSocket");
+const DatabaseCheckService = require("./services/DatabaseCheckService");
 
 /**
  * Membuat HTTP server + Socket.IO server.
@@ -20,7 +20,7 @@ function createServer() {
 
   ChatSocket.register(io);
   // Controller REST memakai io yang sama untuk menyiarkan event hapus (request.app.get('io')).
-  app.set('io', io);
+  app.set("io", io);
 
   return { httpServer: httpServer, io: io };
 }
@@ -39,7 +39,9 @@ async function main() {
   await DatabaseCheckService.ensureReady();
   await startServer(Environment.port);
 
-  console.log(`AI Chat Messenger backend listening on http://localhost:${Environment.port}`);
+  console.log(
+    `AI Chat Messenger backend listening on http://localhost:${Environment.port}`,
+  );
 }
 
 if (require.main === module) {

@@ -1,6 +1,6 @@
-const AiChatClient = require('./AiChatClient');
-const ConversationService = require('./ConversationService');
-const MessageService = require('./MessageService');
+const AiChatClient = require("./AiChatClient");
+const ConversationService = require("./ConversationService");
+const MessageService = require("./MessageService");
 
 const HISTORY_MESSAGE_LIMIT = 10;
 
@@ -17,7 +17,10 @@ class AssistantService {
       return null;
     }
 
-    const recentMessages = await MessageService.findRecentInConversation(conversationId, HISTORY_MESSAGE_LIMIT);
+    const recentMessages = await MessageService.findRecentInConversation(
+      conversationId,
+      HISTORY_MESSAGE_LIMIT,
+    );
     const chatMessages = AssistantService.buildChatMessages(recentMessages);
 
     let assistantMessage;
@@ -25,17 +28,25 @@ class AssistantService {
     try {
       const result = await AiChatClient.reply(chatMessages);
 
-      assistantMessage = await MessageService.createAssistantMessage(conversationId, result.text, {
-        provider: result.provider,
-        model: result.model,
-      });
+      assistantMessage = await MessageService.createAssistantMessage(
+        conversationId,
+        result.text,
+        {
+          provider: result.provider,
+          model: result.model,
+        },
+      );
     } catch (error) {
       // Kegagalan AI tetap disimpan sebagai pesan assistant agar user tahu apa yang terjadi.
-      const errorText = error.message || 'generation failed';
+      const errorText = error.message || "generation failed";
 
-      assistantMessage = await MessageService.createAssistantMessage(conversationId, `AI error: ${errorText}`, {
-        error: true,
-      });
+      assistantMessage = await MessageService.createAssistantMessage(
+        conversationId,
+        `AI error: ${errorText}`,
+        {
+          error: true,
+        },
+      );
     }
 
     await ConversationService.touch(conversationId);
@@ -49,10 +60,10 @@ class AssistantService {
    */
   static buildChatMessages(messages) {
     return messages.map((message) => {
-      let role = 'assistant';
+      let role = "assistant";
 
-      if (message.senderRole === 'user') {
-        role = 'user';
+      if (message.senderRole === "user") {
+        role = "user";
       }
 
       return { role: role, content: message.content };

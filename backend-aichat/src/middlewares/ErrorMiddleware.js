@@ -1,11 +1,11 @@
-const HttpError = require('../utils/HttpError');
+const HttpError = require("../utils/HttpError");
 
 class ErrorMiddleware {
   /**
    * Dipanggil ketika tidak ada route yang cocok.
    */
   static notFound(request, response) {
-    return response.status(404).json({ ok: false, error: 'route not found' });
+    return response.status(404).json({ ok: false, error: "route not found" });
   }
 
   /**
@@ -15,17 +15,23 @@ class ErrorMiddleware {
   // eslint-disable-next-line no-unused-vars
   static handle(error, request, response, next) {
     if (error instanceof HttpError) {
-      return response.status(error.statusCode).json({ ok: false, error: error.message, ...error.extra });
+      return response
+        .status(error.statusCode)
+        .json({ ok: false, error: error.message, ...error.extra });
     }
 
     // Body JSON yang rusak (dilempar express.json) adalah kesalahan client, bukan server.
-    if (error.type === 'entity.parse.failed') {
-      return response.status(400).json({ ok: false, error: 'invalid JSON body' });
+    if (error.type === "entity.parse.failed") {
+      return response
+        .status(400)
+        .json({ ok: false, error: "invalid JSON body" });
     }
 
     console.error(`[${request.method} ${request.originalUrl}]`, error);
 
-    return response.status(500).json({ ok: false, error: 'internal server error' });
+    return response
+      .status(500)
+      .json({ ok: false, error: "internal server error" });
   }
 }
 

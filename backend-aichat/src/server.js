@@ -1,6 +1,6 @@
-const http = require('http');
-const Environment = require('./config/environment');
-const app = require('./app');
+const http = require("http");
+const Environment = require("./config/environment");
+const app = require("./app");
 
 /**
  * Service ini hanya REST biasa (tanpa Socket.IO dan tanpa database),
@@ -21,7 +21,7 @@ async function main() {
 
   console.log(
     `AI Chat Messenger aichat service listening on http://localhost:${Environment.port} ` +
-      `(provider: ${Environment.aiProvider}, model: ${Environment.activeModel})`
+      `(provider: ${Environment.aiProvider}, model: ${Environment.activeModel})`,
   );
 }
 

@@ -1,17 +1,23 @@
-const { z } = require('zod');
+const { z } = require("zod");
 
 // Pesan ini dipakai untuk email maupun password yang kosong, agar sama dengan perilaku lama
 // (client cukup tahu bahwa keduanya wajib diisi).
-const REQUIRED_MESSAGE = 'email and password required';
+const REQUIRED_MESSAGE = "email and password required";
 const MIN_PASSWORD_LENGTH = 6;
 
 const emailField = z
-  .string({ required_error: REQUIRED_MESSAGE, invalid_type_error: 'email must be a string' })
+  .string({
+    required_error: REQUIRED_MESSAGE,
+    invalid_type_error: "email must be a string",
+  })
   .min(1, { message: REQUIRED_MESSAGE })
-  .email({ message: 'email must be a valid email address' });
+  .email({ message: "email must be a valid email address" });
 
 const passwordField = z
-  .string({ required_error: REQUIRED_MESSAGE, invalid_type_error: 'password must be a string' })
+  .string({
+    required_error: REQUIRED_MESSAGE,
+    invalid_type_error: "password must be a string",
+  })
   .min(1, { message: REQUIRED_MESSAGE });
 
 /**
@@ -24,7 +30,11 @@ const signupSchema = z.object({
   password: passwordField.min(MIN_PASSWORD_LENGTH, {
     message: `password must be at least ${MIN_PASSWORD_LENGTH} characters`,
   }),
-  name: z.string({ invalid_type_error: 'name must be a string' }).trim().max(100).optional(),
+  name: z
+    .string({ invalid_type_error: "name must be a string" })
+    .trim()
+    .max(100)
+    .optional(),
 });
 
 /**

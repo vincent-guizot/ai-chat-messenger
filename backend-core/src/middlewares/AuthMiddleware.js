@@ -1,4 +1,4 @@
-const TokenService = require('../services/TokenService');
+const TokenService = require("../services/TokenService");
 
 class AuthMiddleware {
   /**
@@ -6,11 +6,11 @@ class AuthMiddleware {
    * Jika valid, data user disimpan di request.user.
    */
   static requireAuth(request, response, next) {
-    const authorizationHeader = request.headers.authorization || '';
-    const bearerPrefix = 'Bearer ';
+    const authorizationHeader = request.headers.authorization || "";
+    const bearerPrefix = "Bearer ";
 
     if (!authorizationHeader.startsWith(bearerPrefix)) {
-      return response.status(401).json({ ok: false, error: 'missing token' });
+      return response.status(401).json({ ok: false, error: "missing token" });
     }
 
     const token = authorizationHeader.slice(bearerPrefix.length);
@@ -19,7 +19,7 @@ class AuthMiddleware {
       request.user = TokenService.verifyToken(token);
       return next();
     } catch (error) {
-      return response.status(401).json({ ok: false, error: 'invalid token' });
+      return response.status(401).json({ ok: false, error: "invalid token" });
     }
   }
 }

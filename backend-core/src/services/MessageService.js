@@ -1,10 +1,10 @@
-const prisma = require('../../prisma/prisma');
+const prisma = require("../../prisma/prisma");
 
 class MessageService {
   static async findAllInConversation(conversationId) {
     return prisma.message.findMany({
       where: { conversationId: conversationId },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: "asc" },
     });
   }
 
@@ -14,7 +14,7 @@ class MessageService {
   static async findRecentInConversation(conversationId, limit) {
     const newestFirst = await prisma.message.findMany({
       where: { conversationId: conversationId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: limit,
     });
 
@@ -34,7 +34,7 @@ class MessageService {
       data: {
         conversationId: conversationId,
         senderId: senderId,
-        senderRole: 'user',
+        senderRole: "user",
         content: content,
       },
     });
@@ -45,7 +45,7 @@ class MessageService {
       data: {
         conversationId: conversationId,
         senderId: null,
-        senderRole: 'assistant',
+        senderRole: "assistant",
         content: content,
         metadata: metadata,
       },

@@ -1,4 +1,4 @@
-const Environment = require('../config/environment');
+const Environment = require("../config/environment");
 
 class HealthController {
   /**
@@ -8,7 +8,7 @@ class HealthController {
   static check(request, response) {
     return response.json({
       ok: true,
-      service: 'aichat',
+      service: "aichat",
       provider: Environment.aiProvider,
       model: Environment.activeModel,
     });

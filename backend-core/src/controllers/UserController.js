@@ -1,4 +1,4 @@
-const UserService = require('../services/UserService');
+const UserService = require("../services/UserService");
 
 class UserController {
   /**
@@ -24,7 +24,9 @@ class UserController {
       const user = await UserService.findById(request.user.id);
 
       if (!user) {
-        return response.status(404).json({ ok: false, error: 'user not found' });
+        return response
+          .status(404)
+          .json({ ok: false, error: "user not found" });
       }
 
       return response.json({ ok: true, user: UserService.toPublicUser(user) });

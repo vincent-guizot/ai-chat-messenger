@@ -1,5 +1,5 @@
-const axios = require('axios');
-const Environment = require('../config/environment');
+const axios = require("axios");
+const Environment = require("../config/environment");
 
 // Model AI bisa lambat (terutama Ollama di CPU), jadi timeout-nya dibuat panjang.
 const REQUEST_TIMEOUT_MS = 120000;
@@ -44,8 +44,8 @@ class AiChatClient {
       throw new Error(AiChatClient.describeFailedResponse(response));
     }
 
-    if (typeof data.text !== 'string') {
-      throw new Error('AI service returned an invalid response');
+    if (typeof data.text !== "string") {
+      throw new Error("AI service returned an invalid response");
     }
 
     return { text: data.text, provider: data.provider, model: data.model };
@@ -72,7 +72,7 @@ class AiChatClient {
   static describeFailedResponse(response) {
     const data = response.data;
 
-    if (data && typeof data.error === 'string' && data.error !== '') {
+    if (data && typeof data.error === "string" && data.error !== "") {
       return `AI service error: ${data.error}`;
     }
 
@@ -83,11 +83,11 @@ class AiChatClient {
    * Tidak ada response sama sekali (koneksi ditolak, DNS gagal, timeout, dll.).
    */
   static describeNetworkError(error) {
-    if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-      return 'AI service timed out';
+    if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
+      return "AI service timed out";
     }
 
-    return 'AI service unavailable';
+    return "AI service unavailable";
   }
 }
 

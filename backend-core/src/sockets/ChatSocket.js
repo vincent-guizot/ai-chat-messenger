@@ -1,10 +1,10 @@
-const TokenService = require('../services/TokenService');
-const ConversationService = require('../services/ConversationService');
-const MessageService = require('../services/MessageService');
-const AssistantService = require('../services/AssistantService');
-const PresenceService = require('../services/PresenceService');
-const UserService = require('../services/UserService');
-const NotificationService = require('../services/NotificationService');
+const TokenService = require("../services/TokenService");
+const ConversationService = require("../services/ConversationService");
+const MessageService = require("../services/MessageService");
+const AssistantService = require("../services/AssistantService");
+const PresenceService = require("../services/PresenceService");
+const UserService = require("../services/UserService");
+const NotificationService = require("../services/NotificationService");
 
 /**
  * Event Socket.IO yang didukung:
@@ -30,7 +30,7 @@ class ChatSocket {
   static register(io) {
     io.use(ChatSocket.authenticate);
 
-    io.on('connection', (socket) => {
+    io.on("connection", (socket) => {
       ChatSocket.handleConnection(io, socket);
     });
   }
@@ -54,7 +54,7 @@ class ChatSocket {
     try {
       socket.user = TokenService.verifyToken(token);
     } catch (error) {
-      console.log('socket auth failed:', error.message);
+      console.log("socket auth failed:", error.message);
     }
 
     return next();
@@ -65,23 +65,23 @@ class ChatSocket {
       ChatSocket.handleUserOnline(io, socket);
     }
 
-    socket.on('join', (payload) => {
+    socket.on("join", (payload) => {
       ChatSocket.handleJoin(socket, payload);
     });
 
-    socket.on('leave', (payload) => {
+    socket.on("leave", (payload) => {
       ChatSocket.handleLeave(socket, payload);
     });
 
-    socket.on('message:create', (payload) => {
+    socket.on("message:create", (payload) => {
       ChatSocket.handleMessageCreate(io, socket, payload);
     });
 
-    socket.on('typing', (payload) => {
+    socket.on("typing", (payload) => {
       ChatSocket.handleTyping(io, socket, payload);
     });
 
-    socket.on('disconnect', () => {
+    socket.on("disconnect", () => {
       if (socket.user) {
         ChatSocket.handleUserOffline(io, socket);
       }
@@ -98,7 +98,7 @@ class ChatSocket {
     const justCameOnline = PresenceService.addConnection(userId);
 
     if (justCameOnline) {
-      io.emit('presence:update', {
+      io.emit("presence:update", {
         userId: userId,
         online: true,
         lastSeenAt: null,
@@ -117,13 +117,13 @@ class ChatSocket {
     try {
       const updatedUser = await UserService.updateLastSeen(userId);
 
-      io.emit('presence:update', {
+      io.emit("presence:update", {
         userId: userId,
         online: false,
         lastSeenAt: updatedUser.lastSeenAt,
       });
     } catch (error) {
-      console.error('failed to update lastSeenAt', error.message);
+      console.error("failed to update lastSeenAt", error.message);
     }
   }
 
@@ -134,7 +134,10 @@ class ChatSocket {
       return;
     }
 
-    const isParticipant = await ConversationService.isParticipant(payload.conversationId, socket.user.id);
+    const isParticipant = await ConversationService.isParticipant(
+      payload.conversationId,
+      socket.user.id,
+    );
 
     if (isParticipant) {
       socket.join(payload.conversationId);
@@ -154,7 +157,8 @@ class ChatSocket {
    * Socket.IO otomatis mencegah satu socket menerima event yang sama dua kali.
    */
   static async conversationAudience(conversationId) {
-    const participantIds = await ConversationService.findHumanParticipantIds(conversationId);
+    const participantIds =
+      await ConversationService.findHumanParticipantIds(conversationId);
     return ChatSocket.roomsFor(conversationId, participantIds);
   }
 
@@ -173,13 +177,20 @@ class ChatSocket {
   static async notifyRecipients(io, message, participantIds) {
     try {
       const sender = await UserService.findById(message.senderId);
-      const notifications = await NotificationService.createForNewMessage(message, sender, participantIds);
+      const notifications = await NotificationService.createForNewMessage(
+        message,
+        sender,
+        participantIds,
+      );
 
       for (const notification of notifications) {
-        io.to(ChatSocket.userRoom(notification.userId)).emit('notification:new', notification);
+        io.to(ChatSocket.userRoom(notification.userId)).emit(
+          "notification:new",
+          notification,
+        );
       }
     } catch (error) {
-      console.error('failed to create notifications', error.message);
+      console.error("failed to create notifications", error.message);
     }
   }
 
@@ -190,20 +201,28 @@ class ChatSocket {
       return;
     }
 
-    const isParticipant = await ConversationService.isParticipant(payload.conversationId, socket.user.id);
+    const isParticipant = await ConversationService.isParticipant(
+      payload.conversationId,
+      socket.user.id,
+    );
 
     if (!isParticipant) {
       return;
     }
 
-    const audience = await ChatSocket.conversationAudience(payload.conversationId);
+    const audience = await ChatSocket.conversationAudience(
+      payload.conversationId,
+    );
 
     // Kirim ke semua peserta kecuali tab milik pengirim sendiri.
-    socket.to(audience).except(ChatSocket.userRoom(socket.user.id)).emit('typing', {
-      conversationId: payload.conversationId,
-      userId: socket.user.id,
-      isTyping: payload.isTyping === true,
-    });
+    socket
+      .to(audience)
+      .except(ChatSocket.userRoom(socket.user.id))
+      .emit("typing", {
+        conversationId: payload.conversationId,
+        userId: socket.user.id,
+        isTyping: payload.isTyping === true,
+      });
   }
 
   // --- Pesan -----------------------------------------------------------------
@@ -211,7 +230,7 @@ class ChatSocket {
   static async handleMessageCreate(io, socket, payload) {
     try {
       if (!socket.user) {
-        socket.emit('error', { message: 'unauthenticated' });
+        socket.emit("error", { message: "unauthenticated" });
         return;
       }
 
@@ -222,29 +241,37 @@ class ChatSocket {
       const conversationId = payload.conversationId;
       const content = String(payload.content).trim();
 
-      if (content === '') {
+      if (content === "") {
         return;
       }
 
-      const isParticipant = await ConversationService.isParticipant(conversationId, socket.user.id);
+      const isParticipant = await ConversationService.isParticipant(
+        conversationId,
+        socket.user.id,
+      );
 
       if (!isParticipant) {
-        socket.emit('error', { message: 'not a member of this conversation' });
+        socket.emit("error", { message: "not a member of this conversation" });
         return;
       }
 
-      const participantIds = await ConversationService.findHumanParticipantIds(conversationId);
+      const participantIds =
+        await ConversationService.findHumanParticipantIds(conversationId);
       const audience = ChatSocket.roomsFor(conversationId, participantIds);
 
-      const userMessage = await MessageService.createUserMessage(conversationId, socket.user.id, content);
+      const userMessage = await MessageService.createUserMessage(
+        conversationId,
+        socket.user.id,
+        content,
+      );
       await ConversationService.touch(conversationId);
-      io.to(audience).emit('message:new', userMessage);
+      io.to(audience).emit("message:new", userMessage);
 
       await ChatSocket.notifyRecipients(io, userMessage, participantIds);
       await ChatSocket.replyWithAssistant(io, audience, conversationId);
     } catch (error) {
-      console.error('message:create error', error);
-      socket.emit('error', { message: error.message || 'server error' });
+      console.error("message:create error", error);
+      socket.emit("error", { message: error.message || "server error" });
     }
   }
 
@@ -255,16 +282,23 @@ class ChatSocket {
       return;
     }
 
-    io.to(audience).emit('assistant:typing', { conversationId: conversationId, isTyping: true });
+    io.to(audience).emit("assistant:typing", {
+      conversationId: conversationId,
+      isTyping: true,
+    });
 
     try {
-      const assistantMessage = await AssistantService.replyToConversation(conversationId);
+      const assistantMessage =
+        await AssistantService.replyToConversation(conversationId);
 
       if (assistantMessage) {
-        io.to(audience).emit('message:new', assistantMessage);
+        io.to(audience).emit("message:new", assistantMessage);
       }
     } finally {
-      io.to(audience).emit('assistant:typing', { conversationId: conversationId, isTyping: false });
+      io.to(audience).emit("assistant:typing", {
+        conversationId: conversationId,
+        isTyping: false,
+      });
     }
   }
 }

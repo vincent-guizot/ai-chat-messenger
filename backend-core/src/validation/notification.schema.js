@@ -1,5 +1,5 @@
-const { z } = require('zod');
-const { idField } = require('./common.schema');
+const { z } = require("zod");
+const { idField } = require("./common.schema");
 
 /**
  * PATCH /api/notifications/read-all
@@ -8,7 +8,7 @@ const { idField } = require('./common.schema');
  */
 const readAllNotificationsSchema = z
   .object({
-    conversationId: idField('conversationId').optional(),
+    conversationId: idField("conversationId").optional(),
   })
   .default({});
 
@@ -16,7 +16,7 @@ const readAllNotificationsSchema = z
  * Params :id pada /api/notifications/:id/read
  */
 const notificationIdParamsSchema = z.object({
-  id: idField('notification id'),
+  id: idField("notification id"),
 });
 
 module.exports = {

@@ -1,8 +1,8 @@
-const prisma = require('../../prisma/prisma');
-const UserService = require('./UserService');
-const MessageService = require('./MessageService');
+const prisma = require("../../prisma/prisma");
+const UserService = require("./UserService");
+const MessageService = require("./MessageService");
 
-const ASSISTANT_GREETING = 'Halo! Saya AI Assistant. Ada yang bisa saya bantu?';
+const ASSISTANT_GREETING = "Halo! Saya AI Assistant. Ada yang bisa saya bantu?";
 
 class ConversationService {
   /**
@@ -16,13 +16,13 @@ class ConversationService {
           some: { userId: userId },
         },
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { updatedAt: "desc" },
       include: {
         participants: {
           include: { user: true },
         },
         messages: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           take: 1,
         },
       },
@@ -32,13 +32,11 @@ class ConversationService {
   }
 
   static async createConversation(options) {
-    const memberRows = [
-      { userId: options.creatorId, role: 'member' },
-    ];
+    const memberRows = [{ userId: options.creatorId, role: "member" }];
 
     for (const participantId of options.participantIds) {
       if (participantId !== options.creatorId) {
-        memberRows.push({ userId: participantId, role: 'member' });
+        memberRows.push({ userId: participantId, role: "member" });
       }
     }
 
@@ -68,7 +66,7 @@ class ConversationService {
   static async findOrCreateDirect(currentUserId, otherUserId) {
     const existingConversation = await prisma.conversation.findFirst({
       where: {
-        type: 'dm',
+        type: "dm",
         AND: [
           { participants: { some: { userId: currentUserId } } },
           { participants: { some: { userId: otherUserId } } },
@@ -78,14 +76,16 @@ class ConversationService {
 
     if (existingConversation) {
       return {
-        conversation: await ConversationService.findById(existingConversation.id),
+        conversation: await ConversationService.findById(
+          existingConversation.id,
+        ),
         isNew: false,
       };
     }
 
     const createdConversation = await ConversationService.createConversation({
       creatorId: currentUserId,
-      type: 'dm',
+      type: "dm",
       title: null,
       participantIds: [otherUserId],
       withAi: false,
@@ -105,7 +105,7 @@ class ConversationService {
           include: { user: true },
         },
         messages: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           take: 1,
         },
       },
@@ -128,14 +128,18 @@ class ConversationService {
       data: {
         conversationId: conversationId,
         userId: assistant.id,
-        role: 'assistant',
+        role: "assistant",
       },
     });
 
-    await MessageService.createAssistantMessage(conversationId, ASSISTANT_GREETING, {
-      provider: 'assistant',
-      model: 'system',
-    });
+    await MessageService.createAssistantMessage(
+      conversationId,
+      ASSISTANT_GREETING,
+      {
+        provider: "assistant",
+        model: "system",
+      },
+    );
   }
 
   /**
@@ -172,7 +176,7 @@ class ConversationService {
     const participants = await prisma.participant.findMany({
       where: {
         conversationId: conversationId,
-        role: { not: 'assistant' },
+        role: { not: "assistant" },
       },
       select: { userId: true },
     });
@@ -184,7 +188,7 @@ class ConversationService {
     const assistantParticipant = await prisma.participant.findFirst({
       where: {
         conversationId: conversationId,
-        role: 'assistant',
+        role: "assistant",
       },
     });
 

@@ -176,3 +176,75 @@ describe('AiProviderService.buildPrompt', () => {
     expect(AiProviderService.buildPrompt([])).toBe('Assistant:');
   });
 });
+
+describe('AiProviderService: usage logging (developer only)', () => {
+  const openAiEnv = { DEFAULT_PROVIDER: 'openai', OPENAI_API_KEY: 'test-key' };
+  let infoLog;
+
+  beforeEach(() => {
+    infoLog = jest.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    infoLog.mockRestore();
+  });
+
+  test('logs token usage and remaining quota from the response and headers', async () => {
+    const { axios, AiProviderService } = loadServiceWithEnv(openAiEnv);
+    axios.post.mockResolvedValue({
+      data: {
+        choices: [{ message: { content: 'ok' } }],
+        usage: { prompt_tokens: 120, completion_tokens: 30, total_tokens: 150 },
+      },
+      headers: {
+        'x-ratelimit-limit-requests': '1000',
+        'x-ratelimit-remaining-requests': '900',
+        'x-ratelimit-limit-tokens': '8000',
+        'x-ratelimit-remaining-tokens': '7850',
+      },
+    });
+
+    await AiProviderService.generate(HALO);
+
+    expect(infoLog).toHaveBeenCalledTimes(1);
+    const line = infoLog.mock.calls[0][0];
+    expect(line).toContain('[ai:usage]');
+    expect(line).toContain('tokens prompt/jawaban/total=120/30/150');
+    expect(line).toContain('sisa token/menit=7850/8000');
+    expect(line).toContain('sisa request/hari=900/1000');
+    expect(line).not.toContain('PERINGATAN');
+  });
+
+  test('warns when 10% or less of the daily requests is left', async () => {
+    const { axios, AiProviderService } = loadServiceWithEnv(openAiEnv);
+    axios.post.mockResolvedValue({
+      data: { choices: [{ message: { content: 'ok' } }] },
+      headers: { 'x-ratelimit-limit-requests': '1000', 'x-ratelimit-remaining-requests': '100' },
+    });
+
+    await AiProviderService.generate(HALO);
+
+    expect(infoLog.mock.calls[0][0]).toContain('PERINGATAN: kuota hampir habis');
+  });
+
+  test('warns when 10% or less of the per-minute tokens is left', async () => {
+    const { axios, AiProviderService } = loadServiceWithEnv(openAiEnv);
+    axios.post.mockResolvedValue({
+      data: { choices: [{ message: { content: 'ok' } }] },
+      headers: { 'x-ratelimit-limit-tokens': '8000', 'x-ratelimit-remaining-tokens': '500' },
+    });
+
+    await AiProviderService.generate(HALO);
+
+    expect(infoLog.mock.calls[0][0]).toContain('PERINGATAN: kuota hampir habis');
+  });
+
+  test('logs nothing when the provider sends neither usage nor rate-limit headers', async () => {
+    const { axios, AiProviderService } = loadServiceWithEnv(openAiEnv);
+    axios.post.mockResolvedValue({ data: { choices: [{ message: { content: 'ok' } }] } });
+
+    await AiProviderService.generate(HALO);
+
+    expect(infoLog).not.toHaveBeenCalled();
+  });
+});

@@ -15,7 +15,7 @@ class ErrorMiddleware {
   // eslint-disable-next-line no-unused-vars
   static handle(error, request, response, next) {
     if (error instanceof HttpError) {
-      return response.status(error.statusCode).json({ ok: false, error: error.message });
+      return response.status(error.statusCode).json({ ok: false, error: error.message, ...error.extra });
     }
 
     // Body JSON yang rusak (dilempar express.json) adalah kesalahan client, bukan server.

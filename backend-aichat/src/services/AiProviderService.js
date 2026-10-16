@@ -4,6 +4,8 @@ const Environment = require('../config/environment');
 // Model AI bisa lambat (terutama Ollama di CPU), jadi timeout-nya dibuat panjang.
 const REQUEST_TIMEOUT_MS = 120000;
 const DEFAULT_MAX_NEW_TOKENS = 512;
+// Log memberi peringatan jika sisa kuota tinggal segini (10%) atau kurang.
+const LOW_QUOTA_RATIO = 0.1;
 
 const SYSTEM_PROMPT =
   'You are a helpful AI Assistant in a chat app. Reply in the same language the user writes in, and keep answers clear and concise.';
@@ -115,6 +117,8 @@ class AiProviderService {
     const response = await axios.post(url, requestBody, requestOptions);
     const data = response.data;
 
+    AiProviderService.logUsage(model, data, response.headers);
+
     let firstChoice = null;
 
     if (data && Array.isArray(data.choices)) {
@@ -126,6 +130,70 @@ class AiProviderService {
     }
 
     return JSON.stringify(data);
+  }
+
+  /**
+   * Mencatat pemakaian token ke log server (untuk developer, tidak dikirim ke client).
+   * - Token request ini: `usage` di body respons (format OpenAI).
+   * - Sisa kuota: header x-ratelimit-* dari Groq. Perlu diingat: "requests" = per HARI (RPD),
+   *   "tokens" = per MENIT (TPM). Sisa token per hari tidak ada di header; lihat dashboard Groq.
+   * Tidak mencatat apa pun jika provider tidak mengirim info tersebut.
+   */
+  static logUsage(model, data, headers) {
+    const parts = [];
+
+    const usage = data && data.usage;
+
+    if (usage && usage.total_tokens !== undefined) {
+      parts.push(`tokens prompt/jawaban/total=${usage.prompt_tokens}/${usage.completion_tokens}/${usage.total_tokens}`);
+    }
+
+    const safeHeaders = headers || {};
+    const limitRequests = AiProviderService.readNumber(safeHeaders['x-ratelimit-limit-requests']);
+    const remainingRequests = AiProviderService.readNumber(safeHeaders['x-ratelimit-remaining-requests']);
+    const limitTokens = AiProviderService.readNumber(safeHeaders['x-ratelimit-limit-tokens']);
+    const remainingTokens = AiProviderService.readNumber(safeHeaders['x-ratelimit-remaining-tokens']);
+
+    if (remainingTokens !== null) {
+      parts.push(`sisa token/menit=${remainingTokens}/${limitTokens}`);
+    }
+
+    if (remainingRequests !== null) {
+      parts.push(`sisa request/hari=${remainingRequests}/${limitRequests}`);
+    }
+
+    if (parts.length === 0) {
+      return;
+    }
+
+    let line = `[ai:usage] model=${model} ${parts.join(' | ')}`;
+
+    const requestsLow =
+      remainingRequests !== null && limitRequests && remainingRequests / limitRequests <= LOW_QUOTA_RATIO;
+    const tokensLow = remainingTokens !== null && limitTokens && remainingTokens / limitTokens <= LOW_QUOTA_RATIO;
+
+    if (requestsLow || tokensLow) {
+      line += ' | PERINGATAN: kuota hampir habis';
+    }
+
+    console.log(line);
+  }
+
+  /**
+   * Mengubah nilai header (string) menjadi angka, atau null jika tidak ada / bukan angka.
+   */
+  static readNumber(value) {
+    if (value === undefined || value === null || value === '') {
+      return null;
+    }
+
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+      return null;
+    }
+
+    return number;
   }
 
   static async generateWithHuggingFace(prompt, model) {

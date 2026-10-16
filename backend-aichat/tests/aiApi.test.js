@@ -181,6 +181,53 @@ describe('POST /api/ai/reply with a mocked provider', () => {
   test('reports a provider failure as 502 with a readable message', async () => {
     const { axios, app } = loadAppWithEnv({ DEFAULT_PROVIDER: 'openai', OPENAI_API_KEY: 'test-key' });
 
+    const providerError = new Error('Request failed with status code 401');
+    providerError.response = { status: 401, data: { error: { message: 'Invalid API Key' } } };
+    axios.post.mockRejectedValue(providerError);
+
+    const response = await request(app)
+      .post('/api/ai/reply')
+      .send({ messages: [{ role: 'user', content: 'Halo' }] });
+
+    expect(response.statusCode).toBe(502);
+    expect(response.body).toEqual({ ok: false, error: 'Invalid API Key' });
+  });
+
+  test('reports an exhausted provider quota (429) as 429 with a code, hiding provider details', async () => {
+    const { axios, app } = loadAppWithEnv({ DEFAULT_PROVIDER: 'openai', OPENAI_API_KEY: 'test-key' });
+    const errorLog = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    const providerError = new Error('Request failed with status code 429');
+    providerError.response = {
+      status: 429,
+      headers: { 'retry-after': '42' },
+      data: { error: { message: 'Rate limit reached on tokens per day (TPD): Limit 200000, Used 199900' } },
+    };
+    axios.post.mockRejectedValue(providerError);
+
+    const response = await request(app)
+      .post('/api/ai/reply')
+      .send({ messages: [{ role: 'user', content: 'Halo' }] });
+
+    expect(response.statusCode).toBe(429);
+    expect(response.body).toEqual({
+      ok: false,
+      error: 'AI quota exhausted, please try again later',
+      code: 'ai_quota_exceeded',
+      retryAfter: 42,
+    });
+
+    // Detail angka hanya untuk developer: ada di log, tidak ada di respons.
+    expect(JSON.stringify(response.body)).not.toContain('TPD');
+    expect(errorLog.mock.calls.some((call) => String(call[0]).includes('Limit 200000'))).toBe(true);
+
+    errorLog.mockRestore();
+  });
+
+  test('omits retryAfter when the provider sends no retry-after header', async () => {
+    const { axios, app } = loadAppWithEnv({ DEFAULT_PROVIDER: 'openai', OPENAI_API_KEY: 'test-key' });
+    const errorLog = jest.spyOn(console, 'error').mockImplementation(() => {});
+
     const providerError = new Error('Request failed with status code 429');
     providerError.response = { status: 429, data: { error: { message: 'Rate limit reached' } } };
     axios.post.mockRejectedValue(providerError);
@@ -189,8 +236,33 @@ describe('POST /api/ai/reply with a mocked provider', () => {
       .post('/api/ai/reply')
       .send({ messages: [{ role: 'user', content: 'Halo' }] });
 
-    expect(response.statusCode).toBe(502);
-    expect(response.body).toEqual({ ok: false, error: 'Rate limit reached' });
+    expect(response.statusCode).toBe(429);
+    expect(response.body).toEqual({
+      ok: false,
+      error: 'AI quota exhausted, please try again later',
+      code: 'ai_quota_exceeded',
+    });
+
+    errorLog.mockRestore();
+  });
+
+  test('does not leak token usage into the successful response', async () => {
+    const { axios, app } = loadAppWithEnv({ DEFAULT_PROVIDER: 'openai', OPENAI_API_KEY: 'test-key' });
+    const infoLog = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+    axios.post.mockResolvedValue({
+      data: { choices: [{ message: { content: 'ok' } }], usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 } },
+      headers: { 'x-ratelimit-remaining-tokens': '7000', 'x-ratelimit-limit-tokens': '8000' },
+    });
+
+    const response = await request(app)
+      .post('/api/ai/reply')
+      .send({ messages: [{ role: 'user', content: 'Halo' }] });
+
+    expect(response.statusCode).toBe(200);
+    expect(Object.keys(response.body).sort()).toEqual(['model', 'ok', 'provider', 'text']);
+
+    infoLog.mockRestore();
   });
 
   test('reports a missing API key as 502, not 500', async () => {

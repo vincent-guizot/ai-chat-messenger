@@ -1,31 +1,43 @@
-const express = require('express');
-const ConversationController = require('../controllers/ConversationController');
-const AuthMiddleware = require('../middlewares/AuthMiddleware');
-const ValidationMiddleware = require('../middlewares/ValidationMiddleware');
+const express = require("express");
+const ConversationController = require("../controllers/ConversationController");
+const AuthMiddleware = require("../middlewares/AuthMiddleware");
+const ValidationMiddleware = require("../middlewares/ValidationMiddleware");
 const {
   storeConversationSchema,
   directConversationSchema,
   conversationIdParamsSchema,
   messageIdParamsSchema,
-} = require('../validation/conversation.schema');
+} = require("../validation/conversation.schema");
 
 const router = express.Router();
 
 router.use(AuthMiddleware.requireAuth);
 
-router.get('/', ConversationController.index);
-router.post('/', ValidationMiddleware.validateBody(storeConversationSchema), ConversationController.store);
-router.post('/direct', ValidationMiddleware.validateBody(directConversationSchema), ConversationController.direct);
+router.get("/", ConversationController.index);
+router.post(
+  "/",
+  ValidationMiddleware.validateBody(storeConversationSchema),
+  ConversationController.store,
+);
+router.post(
+  "/direct",
+  ValidationMiddleware.validateBody(directConversationSchema),
+  ConversationController.direct,
+);
 router.get(
-  '/:id/messages',
+  "/:id/messages",
   ValidationMiddleware.validateParams(conversationIdParamsSchema),
-  ConversationController.messages
+  ConversationController.messages,
 );
 router.delete(
-  '/:id/messages/:messageId',
+  "/:id/messages/:messageId",
   ValidationMiddleware.validateParams(messageIdParamsSchema),
-  ConversationController.destroyMessage
+  ConversationController.destroyMessage,
 );
-router.delete('/:id', ValidationMiddleware.validateParams(conversationIdParamsSchema), ConversationController.destroy);
+router.delete(
+  "/:id",
+  ValidationMiddleware.validateParams(conversationIdParamsSchema),
+  ConversationController.destroy,
+);
 
 module.exports = router;

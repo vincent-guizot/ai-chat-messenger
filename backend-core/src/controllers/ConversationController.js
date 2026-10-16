@@ -1,9 +1,9 @@
-const ConversationService = require('../services/ConversationService');
-const MessageService = require('../services/MessageService');
-const UserService = require('../services/UserService');
-const HttpError = require('../utils/HttpError');
-const ChatSocket = require('../sockets/ChatSocket');
-const NotificationService = require('../services/NotificationService');
+const ConversationService = require("../services/ConversationService");
+const MessageService = require("../services/MessageService");
+const UserService = require("../services/UserService");
+const HttpError = require("../utils/HttpError");
+const ChatSocket = require("../sockets/ChatSocket");
+const NotificationService = require("../services/NotificationService");
 
 class ConversationController {
   /**
@@ -11,7 +11,9 @@ class ConversationController {
    */
   static async index(request, response, next) {
     try {
-      const conversations = await ConversationService.findAllForUser(request.user.id);
+      const conversations = await ConversationService.findAllForUser(
+        request.user.id,
+      );
 
       return response.json({ ok: true, conversations: conversations });
     } catch (error) {
@@ -54,16 +56,19 @@ class ConversationController {
 
       // Pemeriksaan ini butuh user yang sedang login, jadi tidak bisa dilakukan di skema.
       if (otherUserId === currentUserId) {
-        throw HttpError.badRequest('cannot start a chat with yourself');
+        throw HttpError.badRequest("cannot start a chat with yourself");
       }
 
       const otherUser = await UserService.findById(otherUserId);
 
       if (!otherUser || otherUser.email === UserService.ASSISTANT_EMAIL) {
-        throw HttpError.notFound('user not found');
+        throw HttpError.notFound("user not found");
       }
 
-      const result = await ConversationService.findOrCreateDirect(currentUserId, otherUserId);
+      const result = await ConversationService.findOrCreateDirect(
+        currentUserId,
+        otherUserId,
+      );
 
       return response.json({
         ok: true,
@@ -81,13 +86,17 @@ class ConversationController {
   static async messages(request, response, next) {
     try {
       const conversationId = request.params.id;
-      const isParticipant = await ConversationService.isParticipant(conversationId, request.user.id);
+      const isParticipant = await ConversationService.isParticipant(
+        conversationId,
+        request.user.id,
+      );
 
       if (!isParticipant) {
-        throw HttpError.forbidden('not allowed');
+        throw HttpError.forbidden("not allowed");
       }
 
-      const messages = await MessageService.findAllInConversation(conversationId);
+      const messages =
+        await MessageService.findAllInConversation(conversationId);
 
       return response.json({ ok: true, messages: messages });
     } catch (error) {
@@ -106,41 +115,50 @@ class ConversationController {
       const messageId = request.params.messageId;
       const userId = request.user.id;
 
-      const isParticipant = await ConversationService.isParticipant(conversationId, userId);
+      const isParticipant = await ConversationService.isParticipant(
+        conversationId,
+        userId,
+      );
 
       if (!isParticipant) {
-        throw HttpError.forbidden('not allowed');
+        throw HttpError.forbidden("not allowed");
       }
 
       const message = await MessageService.findById(messageId);
 
       if (!message || message.conversationId !== conversationId) {
-        throw HttpError.notFound('message not found');
+        throw HttpError.notFound("message not found");
       }
 
-      const isOwnMessage = message.senderRole === 'user' && message.senderId === userId;
+      const isOwnMessage =
+        message.senderRole === "user" && message.senderId === userId;
       let canDelete = isOwnMessage;
 
-      if (!canDelete && message.senderRole === 'assistant') {
-        const hasAssistant = await ConversationService.hasAssistant(conversationId);
+      if (!canDelete && message.senderRole === "assistant") {
+        const hasAssistant =
+          await ConversationService.hasAssistant(conversationId);
         canDelete = hasAssistant;
       }
 
       if (!canDelete) {
-        throw HttpError.forbidden('you can only delete your own messages');
+        throw HttpError.forbidden("you can only delete your own messages");
       }
 
-      const participantIds = await ConversationService.findHumanParticipantIds(conversationId);
+      const participantIds =
+        await ConversationService.findHumanParticipantIds(conversationId);
 
       await MessageService.deleteById(messageId);
       await NotificationService.deleteForMessage(messageId);
 
-      const io = request.app.get('io');
+      const io = request.app.get("io");
       if (io) {
-        io.to(ChatSocket.roomsFor(conversationId, participantIds)).emit('message:deleted', {
-          conversationId: conversationId,
-          messageId: messageId,
-        });
+        io.to(ChatSocket.roomsFor(conversationId, participantIds)).emit(
+          "message:deleted",
+          {
+            conversationId: conversationId,
+            messageId: messageId,
+          },
+        );
       }
 
       return response.json({ ok: true });
@@ -159,29 +177,39 @@ class ConversationController {
       const conversationId = request.params.id;
       const userId = request.user.id;
 
-      const isParticipant = await ConversationService.isParticipant(conversationId, userId);
+      const isParticipant = await ConversationService.isParticipant(
+        conversationId,
+        userId,
+      );
 
       if (!isParticipant) {
-        throw HttpError.forbidden('not allowed');
+        throw HttpError.forbidden("not allowed");
       }
 
-      const hasAssistant = await ConversationService.hasAssistant(conversationId);
-      const participantIds = await ConversationService.findHumanParticipantIds(conversationId);
-      const io = request.app.get('io');
+      const hasAssistant =
+        await ConversationService.hasAssistant(conversationId);
+      const participantIds =
+        await ConversationService.findHumanParticipantIds(conversationId);
+      const io = request.app.get("io");
 
       if (hasAssistant || participantIds.length <= 1) {
         await ConversationService.deleteConversation(conversationId);
 
         if (io) {
-          io.to(ChatSocket.roomsFor(conversationId, participantIds)).emit('conversation:deleted', {
-            conversationId: conversationId,
-          });
+          io.to(ChatSocket.roomsFor(conversationId, participantIds)).emit(
+            "conversation:deleted",
+            {
+              conversationId: conversationId,
+            },
+          );
         }
       } else {
         await ConversationService.removeParticipant(conversationId, userId);
 
         if (io) {
-          io.to(ChatSocket.userRoom(userId)).emit('conversation:deleted', { conversationId: conversationId });
+          io.to(ChatSocket.userRoom(userId)).emit("conversation:deleted", {
+            conversationId: conversationId,
+          });
         }
       }
 

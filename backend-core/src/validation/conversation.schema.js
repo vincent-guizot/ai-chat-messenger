@@ -1,5 +1,5 @@
-const { z } = require('zod');
-const { idField } = require('./common.schema');
+const { z } = require("zod");
+const { idField } = require("./common.schema");
 
 const MAX_TITLE_LENGTH = 200;
 
@@ -18,18 +18,22 @@ function onlyExactlyTrue(value) {
  */
 const storeConversationSchema = z.object({
   type: z
-    .string({ invalid_type_error: 'type must be a string' })
+    .string({ invalid_type_error: "type must be a string" })
     .trim()
-    .min(1, { message: 'type must not be empty' })
-    .default('dm'),
+    .min(1, { message: "type must not be empty" })
+    .default("dm"),
   title: z
-    .string({ invalid_type_error: 'title must be a string' })
+    .string({ invalid_type_error: "title must be a string" })
     .trim()
-    .min(1, { message: 'title must not be empty' })
-    .max(MAX_TITLE_LENGTH, { message: `title must be at most ${MAX_TITLE_LENGTH} characters` })
-    .default('New chat'),
+    .min(1, { message: "title must not be empty" })
+    .max(MAX_TITLE_LENGTH, {
+      message: `title must be at most ${MAX_TITLE_LENGTH} characters`,
+    })
+    .default("New chat"),
   participantIds: z
-    .array(idField('participantId'), { invalid_type_error: 'participantIds must be an array' })
+    .array(idField("participantId"), {
+      invalid_type_error: "participantIds must be an array",
+    })
     .default([]),
   withAi: z.unknown().transform(onlyExactlyTrue),
 });
@@ -39,22 +43,22 @@ const storeConversationSchema = z.object({
  * Body: { userId }
  */
 const directConversationSchema = z.object({
-  userId: idField('userId'),
+  userId: idField("userId"),
 });
 
 /**
  * Params :id pada /api/conversations/:id/...
  */
 const conversationIdParamsSchema = z.object({
-  id: idField('conversation id'),
+  id: idField("conversation id"),
 });
 
 /**
  * Params :id dan :messageId pada /api/conversations/:id/messages/:messageId
  */
 const messageIdParamsSchema = z.object({
-  id: idField('conversation id'),
-  messageId: idField('message id'),
+  id: idField("conversation id"),
+  messageId: idField("message id"),
 });
 
 module.exports = {

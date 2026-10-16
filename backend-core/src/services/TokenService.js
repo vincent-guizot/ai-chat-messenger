@@ -1,5 +1,5 @@
-const jsonWebToken = require('jsonwebtoken');
-const Environment = require('../config/environment');
+const jsonWebToken = require("jsonwebtoken");
+const Environment = require("../config/environment");
 
 class TokenService {
   /**

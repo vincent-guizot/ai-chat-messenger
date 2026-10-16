@@ -1,7 +1,7 @@
-const UserService = require('../services/UserService');
-const TokenService = require('../services/TokenService');
-const NotificationService = require('../services/NotificationService');
-const HttpError = require('../utils/HttpError');
+const UserService = require("../services/UserService");
+const TokenService = require("../services/TokenService");
+const NotificationService = require("../services/NotificationService");
+const HttpError = require("../utils/HttpError");
 
 class AuthController {
   /**
@@ -17,11 +17,11 @@ class AuthController {
       const existingUser = await UserService.findByEmail(email);
 
       if (existingUser) {
-        throw HttpError.badRequest('email already in use');
+        throw HttpError.badRequest("email already in use");
       }
 
       if (!name) {
-        name = email.split('@')[0];
+        name = email.split("@")[0];
       }
 
       const user = await UserService.createUser(email, password, name);
@@ -30,8 +30,8 @@ class AuthController {
       await NotificationService.create({
         userId: user.id,
         type: NotificationService.TYPES.system,
-        title: 'Welcome to AI Chat Messenger',
-        body: 'Start a chat with the AI Assistant, or find someone online in Contacts.',
+        title: "Welcome to AI Chat Messenger",
+        body: "Start a chat with the AI Assistant, or find someone online in Contacts.",
       });
 
       return response.json({
@@ -56,13 +56,16 @@ class AuthController {
       const user = await UserService.findByEmail(email);
 
       if (!user) {
-        throw HttpError.badRequest('invalid credentials');
+        throw HttpError.badRequest("invalid credentials");
       }
 
-      const passwordIsCorrect = await UserService.isPasswordCorrect(user, password);
+      const passwordIsCorrect = await UserService.isPasswordCorrect(
+        user,
+        password,
+      );
 
       if (!passwordIsCorrect) {
-        throw HttpError.badRequest('invalid credentials');
+        throw HttpError.badRequest("invalid credentials");
       }
 
       const token = TokenService.createToken(user);

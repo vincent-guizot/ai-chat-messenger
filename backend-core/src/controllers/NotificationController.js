@@ -1,5 +1,5 @@
-const NotificationService = require('../services/NotificationService');
-const HttpError = require('../utils/HttpError');
+const NotificationService = require("../services/NotificationService");
+const HttpError = require("../utils/HttpError");
 
 class NotificationController {
   /**
@@ -27,10 +27,13 @@ class NotificationController {
    */
   static async markAsRead(request, response, next) {
     try {
-      const notification = await NotificationService.markAsRead(request.params.id, request.user.id);
+      const notification = await NotificationService.markAsRead(
+        request.params.id,
+        request.user.id,
+      );
 
       if (!notification) {
-        throw HttpError.notFound('notification not found');
+        throw HttpError.notFound("notification not found");
       }
 
       return response.json({ ok: true, notification: notification });
@@ -51,7 +54,10 @@ class NotificationController {
         conversationId = request.body.conversationId;
       }
 
-      const updatedCount = await NotificationService.markAllAsRead(request.user.id, conversationId);
+      const updatedCount = await NotificationService.markAllAsRead(
+        request.user.id,
+        conversationId,
+      );
 
       return response.json({ ok: true, updatedCount: updatedCount });
     } catch (error) {

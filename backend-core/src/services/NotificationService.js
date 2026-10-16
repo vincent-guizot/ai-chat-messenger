@@ -1,11 +1,11 @@
-const prisma = require('../../prisma/prisma');
+const prisma = require("../../prisma/prisma");
 
 const DEFAULT_LIST_LIMIT = 30;
 const MESSAGE_PREVIEW_LENGTH = 120;
 
 const NOTIFICATION_TYPES = {
-  message: 'message',
-  system: 'system',
+  message: "message",
+  system: "system",
 };
 
 // Data pengirim yang ikut dikirim ke client (tanpa passwordHash).
@@ -24,7 +24,7 @@ class NotificationService {
   static async findForUser(userId, limit) {
     return prisma.notification.findMany({
       where: { userId: userId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: limit || DEFAULT_LIST_LIMIT,
       include: { actor: ACTOR_FIELDS },
     });
@@ -59,7 +59,7 @@ class NotificationService {
    * Mengembalikan daftar notifikasi yang dibuat, agar bisa dikirim lewat socket.
    */
   static async createForNewMessage(message, sender, recipientIds) {
-    let senderName = 'Someone';
+    let senderName = "Someone";
     if (sender && sender.name) {
       senderName = sender.name;
     }
@@ -96,7 +96,7 @@ class NotificationService {
    */
   static async deleteForMessage(messageId) {
     return prisma.notification.deleteMany({
-      where: { data: { path: ['messageId'], equals: messageId } },
+      where: { data: { path: ["messageId"], equals: messageId } },
     });
   }
 
@@ -146,7 +146,9 @@ class NotificationService {
   }
 
   static toPreview(text) {
-    const singleLine = String(text || '').replace(/\s+/g, ' ').trim();
+    const singleLine = String(text || "")
+      .replace(/\s+/g, " ")
+      .trim();
 
     if (singleLine.length <= MESSAGE_PREVIEW_LENGTH) {
       return singleLine;

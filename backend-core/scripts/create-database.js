@@ -43,9 +43,26 @@ async function createDatabaseIfMissing(databaseUrl) {
   }
 }
 
+/**
+ * Database di layanan managed (Neon dll.) sudah dibuat dari dashboard-nya dan
+ * user-nya tidak boleh CREATE DATABASE, jadi langkah ini dilewati.
+ */
+function shouldSkip(databaseUrl) {
+  if (process.env.SKIP_DB_CREATE === "true") {
+    return true;
+  }
+
+  return new URL(databaseUrl).hostname.endsWith(".neon.tech");
+}
+
 if (require.main === module) {
   const databaseUrl =
     process.argv[2] || process.env.DATABASE_URL || FALLBACK_DATABASE_URL;
+
+  if (shouldSkip(databaseUrl)) {
+    console.log("Managed database detected, skipping CREATE DATABASE.");
+    process.exit(0);
+  }
 
   createDatabaseIfMissing(databaseUrl).catch((error) => {
     console.error("Error creating database:", error.message);

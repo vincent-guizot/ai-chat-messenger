@@ -1,15 +1,15 @@
+import { useState } from 'react';
 import { Bell, BellOff, CheckCheck, Info, MessageSquareText } from 'lucide-react';
-import { cn } from '../../lib/cn';
-import { SIDEBAR_TABS, useUiStore } from '../../stores/uiStore';
-import { useOpenConversation } from '../../hooks/useChatData';
-import {
-  useMarkAllNotificationsRead,
-  useMarkNotificationRead,
-  useNotificationsQuery,
-} from '../../hooks/useNotifications';
-import { formatRelativeTime } from '../../utils/formatters';
-import IconButton from '../ui/IconButton';
-import Popover from '../ui/Popover';
+import { cn } from '@/lib/utils';
+import { SIDEBAR_TABS, useUiStore } from '@/stores/uiStore';
+import { useOpenConversation } from '@/hooks/useChatData';
+import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotificationsQuery } from '@/hooks/useNotifications';
+import { formatRelativeTime } from '@/utils/formatters';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import IconButton from '@/components/shared/IconButton';
 
 const MAX_BADGE_COUNT = 9;
 
@@ -17,7 +17,7 @@ const MAX_BADGE_COUNT = 9;
 const TYPE_STYLES = {
   message: {
     icon: MessageSquareText,
-    iconClass: 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300',
+    iconClass: 'bg-brand-50 text-primary dark:bg-brand-500/15 dark:text-brand-300',
   },
   system: {
     icon: Info,
@@ -36,9 +36,9 @@ function UnreadBadge(props) {
   }
 
   return (
-    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-surface">
+    <Badge variant="destructive" className="absolute -right-1 -top-1 h-4 min-w-4 px-1 text-[10px] ring-2 ring-card">
       {label}
-    </span>
+    </Badge>
   );
 }
 
@@ -53,33 +53,31 @@ function NotificationItem(props) {
       type="button"
       onClick={() => props.onSelect(notification)}
       className={cn(
-        'flex w-full items-start gap-3 px-3 py-2.5 text-left transition-colors hover:bg-tint',
+        'flex w-full items-start gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted',
         isUnread && 'bg-brand-50/50 dark:bg-brand-500/5',
       )}
     >
-      <span className={cn('mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md', style.iconClass)}>
-        <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+      <span className={cn('mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md', style.iconClass)}>
+        <Icon className="size-3.5" aria-hidden="true" />
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className={cn('block truncate text-sm', isUnread && 'font-semibold text-ink')}>
-          {notification.title}
-        </span>
-        {notification.body && (
-          <span className="mt-0.5 line-clamp-2 block text-xs text-ink-muted dark:text-ink-muted">{notification.body}</span>
-        )}
-        <span className="mt-1 block text-[11px] text-ink-muted">{formatRelativeTime(notification.createdAt)}</span>
+        <span className={cn('block truncate text-sm', isUnread && 'font-semibold text-foreground')}>{notification.title}</span>
+        {notification.body && <span className="mt-0.5 line-clamp-2 block text-xs text-muted-foreground">{notification.body}</span>}
+        <span className="mt-1 block text-[11px] text-muted-foreground">{formatRelativeTime(notification.createdAt)}</span>
       </span>
 
-      {isUnread && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-brand-500" aria-label="Unread" />}
+      {isUnread && <span className="mt-2 size-2 shrink-0 rounded-full bg-brand-500" aria-label="Unread" />}
     </button>
   );
 }
 
 /**
- * Tombol lonceng di header + panel daftar notifikasi.
+ * Tombol lonceng di header + panel daftar notifikasi (Popover shadcn/ui).
  */
 export default function NotificationBell() {
+  const [isOpen, setIsOpen] = useState(false);
+
   const notificationsQuery = useNotificationsQuery();
   const markNotificationRead = useMarkNotificationRead();
   const markAllNotificationsRead = useMarkAllNotificationsRead();
@@ -89,7 +87,7 @@ export default function NotificationBell() {
   const notifications = notificationsQuery.result.notifications;
   const unreadCount = notificationsQuery.result.unreadCount;
 
-  function handleSelect(notification, close) {
+  function handleSelect(notification) {
     if (!notification.readAt) {
       markNotificationRead.mutate(notification.id);
     }
@@ -99,60 +97,54 @@ export default function NotificationBell() {
       openConversation(notification.conversationId);
     }
 
-    close();
+    setIsOpen(false);
   }
 
   return (
-    <Popover
-      className="w-[min(22rem,calc(100vw-2rem))]"
-      trigger={(isOpen, toggle) => (
-        <IconButton variant="card" size="lg" label="Notifications" onClick={toggle} aria-expanded={isOpen}>
-          <Bell className="h-[18px] w-[18px]" />
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <IconButton label="Notifications" variant="outline" aria-expanded={isOpen}>
+          <Bell className="size-[18px]" />
           <UnreadBadge count={unreadCount} />
         </IconButton>
-      )}
-    >
-      {(close) => (
-        <div>
-          <div className="flex items-center justify-between border-b border-line px-3 py-2.5">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-ink">Notifications</span>
-              {unreadCount > 0 && (
-                <span className="rounded-full bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-600 dark:bg-red-500/15 dark:text-red-400">
-                  {unreadCount} new
-                </span>
-              )}
-            </div>
+      </PopoverTrigger>
 
-            <button
-              type="button"
-              onClick={() => markAllNotificationsRead.mutate(null)}
-              disabled={unreadCount === 0}
-              className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700 disabled:cursor-default disabled:text-ink-muted dark:text-brand-300"
-            >
-              <CheckCheck className="h-3.5 w-3.5" aria-hidden="true" />
-              Mark all as read
-            </button>
-          </div>
-
-          <div className="max-h-96 divide-y divide-line overflow-y-auto">
-            {notifications.length === 0 && (
-              <div className="flex flex-col items-center gap-2 px-6 py-10 text-center text-ink-muted">
-                <BellOff className="h-5 w-5" aria-hidden="true" />
-                <span className="text-sm">You're all caught up</span>
-              </div>
+      <PopoverContent align="end" className="w-[min(22rem,calc(100vw-2rem))] overflow-hidden p-0">
+        <div className="flex items-center justify-between border-b border-border px-3 py-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-foreground">Notifications</span>
+            {unreadCount > 0 && (
+              <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive">
+                {unreadCount} new
+              </Badge>
             )}
-
-            {notifications.map((notification) => (
-              <NotificationItem
-                key={notification.id}
-                notification={notification}
-                onSelect={(selected) => handleSelect(selected, close)}
-              />
-            ))}
           </div>
+
+          <Button
+            variant="link"
+            size="sm"
+            onClick={() => markAllNotificationsRead.mutate(null)}
+            disabled={unreadCount === 0}
+            className="h-8 gap-1 px-1 text-xs disabled:text-muted-foreground"
+          >
+            <CheckCheck className="size-3.5" aria-hidden="true" />
+            Mark all as read
+          </Button>
         </div>
-      )}
+
+        <ScrollArea className="max-h-96" viewportClassName="max-h-96 [&>div]:divide-y [&>div]:divide-border">
+          {notifications.length === 0 && (
+            <div className="flex flex-col items-center gap-2 px-6 py-10 text-center text-muted-foreground">
+              <BellOff className="size-5" aria-hidden="true" />
+              <span className="text-sm">You're all caught up</span>
+            </div>
+          )}
+
+          {notifications.map((notification) => (
+            <NotificationItem key={notification.id} notification={notification} onSelect={handleSelect} />
+          ))}
+        </ScrollArea>
+      </PopoverContent>
     </Popover>
   );
 }

@@ -1,90 +1,48 @@
-import { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
-import { cn } from '../../lib/cn';
+import * as PopoverPrimitive from '@radix-ui/react-popover';
+import { cn } from '@/lib/utils';
 
-/**
- * Kotak melayang yang muncul saat tombol pemicu diklik.
- * Tertutup otomatis saat klik di luar atau menekan Escape.
- *
- * Props:
- *   trigger    function(isOpen, toggle) -> elemen tombol
- *   children   function(close) -> isi popover
- *   align      "left" | "right"
- *   placement  "top" | "bottom"
- *   className  class tambahan untuk kotak popover (mis. lebar)
- */
-export default function Popover(props) {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef(null);
+function Popover(props) {
+  return <PopoverPrimitive.Root data-slot="popover" {...props} />;
+}
 
-  useEffect(() => {
-    if (!isOpen) {
-      return undefined;
-    }
+function PopoverTrigger(props) {
+  return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />;
+}
 
-    function handlePointerDown(event) {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    }
+function PopoverAnchor(props) {
+  return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />;
+}
 
-    function handleKeyDown(event) {
-      if (event.key === 'Escape') {
-        setIsOpen(false);
-      }
-    }
+function PopoverContent(props) {
+  const { className, align, sideOffset, ...otherProps } = props;
 
-    document.addEventListener('pointerdown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen]);
-
-  function toggle() {
-    setIsOpen(!isOpen);
+  let alignment = 'center';
+  if (align) {
+    alignment = align;
   }
 
-  function close() {
-    setIsOpen(false);
-  }
-
-  const isPlacedOnTop = props.placement === 'top';
-  const isAlignedLeft = props.align === 'left';
-
-  // Popover muncul sedikit bergeser ke arah tombol, lalu bergerak ke posisi akhirnya.
-  let offsetY = -4;
-  if (isPlacedOnTop) {
-    offsetY = 4;
+  let offset = 8;
+  if (sideOffset !== undefined) {
+    offset = sideOffset;
   }
 
   return (
-    <div ref={containerRef} className="relative">
-      {props.trigger(isOpen, toggle)}
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: offsetY }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: offsetY }}
-            transition={{ duration: 0.12 }}
-            className={cn(
-              'absolute z-50 overflow-hidden rounded-lg border border-line bg-surface shadow-popover',
-              '',
-              isAlignedLeft && 'left-0',
-              !isAlignedLeft && 'right-0',
-              isPlacedOnTop && 'bottom-full mb-2',
-              !isPlacedOnTop && 'top-full mt-2',
-              props.className,
-            )}
-          >
-            {props.children(close)}
-          </motion.div>
+    <PopoverPrimitive.Portal>
+      <PopoverPrimitive.Content
+        data-slot="popover-content"
+        align={alignment}
+        sideOffset={offset}
+        className={cn(
+          'z-50 w-72 rounded-lg border border-border bg-popover text-popover-foreground shadow-popover outline-none',
+          'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+          'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+          'data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
+          className,
         )}
-      </AnimatePresence>
-    </div>
+        {...otherProps}
+      />
+    </PopoverPrimitive.Portal>
   );
 }
+
+export { Popover, PopoverTrigger, PopoverContent, PopoverAnchor };

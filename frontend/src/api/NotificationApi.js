@@ -4,8 +4,8 @@ class NotificationApi {
   /**
    * Mengembalikan { notifications, unreadCount }.
    */
-  static async getAll(token) {
-    const data = await ApiClient.get('/api/notifications', token);
+  static async getAll() {
+    const data = await ApiClient.get('/api/notifications');
 
     return {
       notifications: data.notifications || [],
@@ -13,22 +13,22 @@ class NotificationApi {
     };
   }
 
-  static async markAsRead(notificationId, token) {
-    const data = await ApiClient.patch(`/api/notifications/${notificationId}/read`, {}, token);
+  static async markAsRead(notificationId) {
+    const data = await ApiClient.patch(`/api/notifications/${notificationId}/read`, {});
     return data.notification;
   }
 
   /**
    * Tandai semua sudah dibaca. Jika conversationId diisi, hanya untuk percakapan itu.
    */
-  static async markAllAsRead(conversationId, token) {
+  static async markAllAsRead(conversationId) {
     const body = {};
 
     if (conversationId) {
       body.conversationId = conversationId;
     }
 
-    const data = await ApiClient.patch('/api/notifications/read-all', body, token);
+    const data = await ApiClient.patch('/api/notifications/read-all', body);
     return data.updatedCount;
   }
 }

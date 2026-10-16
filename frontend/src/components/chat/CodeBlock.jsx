@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
-import { cn } from '../../lib/cn';
-import { highlightCode } from '../../utils/highlightCode';
+import { cn } from '@/lib/utils';
+import { highlightCode } from '@/utils/highlightCode';
 
 const COPIED_RESET_MS = 1800;
 
@@ -27,24 +27,24 @@ export default function CodeBlock(props) {
   }
 
   return (
-    <div className="my-2 overflow-hidden rounded-lg border border-line bg-canvas">
-      <div className="flex items-center justify-between border-b border-line px-3 py-1.5">
-        <span className="font-mono text-[11px] text-ink-muted dark:text-ink-muted">{props.language || 'code'}</span>
+    <div className="my-2 overflow-hidden rounded-lg border border-border bg-background">
+      <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
+        <span className="font-mono text-[11px] text-muted-foreground">{props.language || 'code'}</span>
         <button
           type="button"
           onClick={handleCopy}
           className={cn(
             'flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium transition-colors',
-            isCopied && 'text-green-600 dark:text-green-400',
-            !isCopied && 'text-ink-muted hover:text-brand-600 dark:text-ink-muted dark:hover:text-brand-300',
+            isCopied && 'text-success',
+            !isCopied && 'text-muted-foreground hover:text-primary dark:hover:text-brand-300',
           )}
         >
-          <CopyIcon className="h-3 w-3" aria-hidden="true" />
+          <CopyIcon className="size-3" aria-hidden="true" />
           {copyLabel}
         </button>
       </div>
 
-      <pre className="overflow-x-auto px-3 py-2.5 font-mono text-xs leading-relaxed text-ink">
+      <pre className="overflow-x-auto px-3 py-2.5 font-mono text-xs leading-relaxed text-foreground">
         <code>
           {tokens.map((token, index) => {
             if (token.type === 'text') {

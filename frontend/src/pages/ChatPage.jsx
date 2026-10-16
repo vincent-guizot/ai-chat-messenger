@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuthStore } from '../stores/authStore';
-import { toTypingInfo, useChatStore } from '../stores/chatStore';
-import { SIDEBAR_TABS, useUiStore } from '../stores/uiStore';
-import useChatSocket from '../hooks/useChatSocket';
-import useSendMessage from '../hooks/useSendMessage';
-import { useAutoReadActiveConversation } from '../hooks/useNotifications';
+import { useAuthStore } from '@/stores/authStore';
+import { toTypingInfo, useChatStore } from '@/stores/chatStore';
+import { SIDEBAR_TABS, useUiStore } from '@/stores/uiStore';
+import useChatSocket from '@/hooks/useChatSocket';
+import useSendMessage from '@/hooks/useSendMessage';
+import { useAutoReadActiveConversation } from '@/hooks/useNotifications';
 import {
   useActiveConversation,
   useContactsById,
@@ -13,15 +13,14 @@ import {
   useCreateAiConversation,
   useDeleteConversation,
   useMessagesQuery,
-} from '../hooks/useChatData';
-import { findOtherUser, getConversationTitle, isAssistantConversation } from '../utils/conversations';
-import Sidebar from '../components/sidebar/Sidebar';
-import ChatHeader from '../components/chat/ChatHeader';
-import MessageList from '../components/chat/MessageList';
-import MessageInput from '../components/chat/MessageInput';
-import WelcomeScreen from '../components/chat/WelcomeScreen';
-import Toast from '../components/ui/Toast';
-import ConfirmDialog from '../components/ui/ConfirmDialog';
+} from '@/hooks/useChatData';
+import { findOtherUser, getConversationTitle, isAssistantConversation } from '@/utils/conversations';
+import Sidebar from '@/components/sidebar/Sidebar';
+import ChatHeader from '@/components/chat/ChatHeader';
+import MessageList from '@/components/chat/MessageList';
+import MessageInput from '@/components/chat/MessageInput';
+import WelcomeScreen from '@/components/chat/WelcomeScreen';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
 
 const EMPTY_LIST = [];
 
@@ -176,10 +175,10 @@ export default function ChatPage() {
 
   return (
     // Sidebar & area chat adalah dua kartu terpisah (radius, border, shadow sendiri) dengan jarak di antaranya.
-    <div className="flex h-full gap-3 overflow-hidden bg-canvas p-2 sm:p-3">
+    <div className="flex h-full gap-3 overflow-hidden bg-background p-2 sm:p-3">
       <Sidebar onLogout={handleLogout} />
 
-      <main className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-line bg-canvas shadow-card">
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-background shadow-card">
         <ChatHeader
           hasConversation={Boolean(activeConversation)}
           title={title}
@@ -238,8 +237,6 @@ export default function ChatPage() {
         onConfirm={confirmDeleteChat}
         onCancel={() => setIsDeleteChatOpen(false)}
       />
-
-      <Toast />
     </div>
   );
 }

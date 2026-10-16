@@ -1,43 +1,52 @@
 import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import ConversationApi from '../api/ConversationApi';
-import UserApi from '../api/UserApi';
-import { queryKeys } from '../lib/queryClient';
-import ChatCache from '../lib/chatCache';
-import { useAuthStore } from '../stores/authStore';
-import { useChatStore } from '../stores/chatStore';
-import { SIDEBAR_TABS, useUiStore } from '../stores/uiStore';
-import { indexContactsById } from '../utils/conversations';
+import { toast } from 'sonner';
+import ConversationApi from '@/api/ConversationApi';
+import UserApi from '@/api/UserApi';
+import { queryKeys } from '@/lib/queryClient';
+import ChatCache from '@/lib/chatCache';
+import { useAuthStore } from '@/stores/authStore';
+import { useChatStore } from '@/stores/chatStore';
+import { SIDEBAR_TABS, useUiStore } from '@/stores/uiStore';
+import { indexContactsById } from '@/utils/conversations';
 
 const EMPTY_LIST = [];
 
-export function useConversationsQuery() {
+/**
+ * Query hanya aktif saat user sudah login; token dikirim otomatis oleh ApiClient.
+ */
+function useIsLoggedIn() {
   const token = useAuthStore((state) => state.token);
+  return Boolean(token);
+}
+
+export function useConversationsQuery() {
+  const isLoggedIn = useIsLoggedIn();
 
   return useQuery({
     queryKey: queryKeys.conversations,
-    queryFn: () => ConversationApi.getAll(token),
-    enabled: Boolean(token),
+    queryFn: ConversationApi.getAll,
+    enabled: isLoggedIn,
   });
 }
 
 export function useContactsQuery() {
-  const token = useAuthStore((state) => state.token);
+  const isLoggedIn = useIsLoggedIn();
 
   return useQuery({
     queryKey: queryKeys.contacts,
-    queryFn: () => UserApi.getContacts(token),
-    enabled: Boolean(token),
+    queryFn: UserApi.getContacts,
+    enabled: isLoggedIn,
   });
 }
 
 export function useMessagesQuery(conversationId) {
-  const token = useAuthStore((state) => state.token);
+  const isLoggedIn = useIsLoggedIn();
 
   return useQuery({
     queryKey: queryKeys.messages(conversationId),
-    queryFn: () => ConversationApi.getMessages(conversationId, token),
-    enabled: Boolean(token) && Boolean(conversationId),
+    queryFn: () => ConversationApi.getMessages(conversationId),
+    enabled: isLoggedIn && Boolean(conversationId),
   });
 }
 
@@ -57,7 +66,8 @@ export function useActiveConversation() {
   const conversations = conversationsQuery.data || EMPTY_LIST;
 
   return useMemo(() => {
-    return conversations.find((conversation) => conversation.id === activeConversationId) || null;
+    const activeConversation = conversations.find((conversation) => conversation.id === activeConversationId);
+    return activeConversation || null;
   }, [conversations, activeConversationId]);
 }
 
@@ -68,28 +78,26 @@ export function useOpenConversation() {
   const setActiveConversationId = useChatStore((state) => state.setActiveConversationId);
   const setMobileSidebarOpen = useUiStore((state) => state.setMobileSidebarOpen);
 
-  return (conversationId) => {
+  return function openConversation(conversationId) {
     setActiveConversationId(conversationId);
     setMobileSidebarOpen(false);
   };
 }
 
 export function useCreateAiConversation() {
-  const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
   const openConversation = useOpenConversation();
   const setActiveTab = useUiStore((state) => state.setActiveTab);
-  const showToast = useChatStore((state) => state.showToast);
 
   return useMutation({
-    mutationFn: () => ConversationApi.createAiConversation(token),
+    mutationFn: ConversationApi.createAiConversation,
     onSuccess: (conversation) => {
       ChatCache.addConversation(queryClient, conversation);
       setActiveTab(SIDEBAR_TABS.assistant);
       openConversation(conversation.id);
     },
     onError: (error) => {
-      showToast(error.message || 'Failed to create AI chat', 'error');
+      toast.error(error.message || 'Failed to create AI chat');
     },
   });
 }
@@ -98,14 +106,12 @@ export function useCreateAiConversation() {
  * Membuka chat langsung dengan user lain (dibuat di server jika belum ada).
  */
 export function useOpenDirectConversation() {
-  const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
   const openConversation = useOpenConversation();
   const setActiveTab = useUiStore((state) => state.setActiveTab);
-  const showToast = useChatStore((state) => state.showToast);
 
   return useMutation({
-    mutationFn: (userId) => ConversationApi.openDirectConversation(userId, token),
+    mutationFn: (userId) => ConversationApi.openDirectConversation(userId),
     onSuccess: (conversation) => {
       const conversations = queryClient.getQueryData(queryKeys.conversations) || [];
       const alreadyListed = conversations.some((item) => item.id === conversation.id);
@@ -118,7 +124,7 @@ export function useOpenDirectConversation() {
       openConversation(conversation.id);
     },
     onError: (error) => {
-      showToast(error.message || 'Failed to open chat', 'error');
+      toast.error(error.message || 'Failed to open chat');
     },
   });
 }
@@ -128,18 +134,16 @@ export function useOpenDirectConversation() {
  * (juga untuk tab/perangkat lain), tapi cache langsung dibersihkan agar terasa instan.
  */
 export function useDeleteMessage() {
-  const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
-  const showToast = useChatStore((state) => state.showToast);
 
   return useMutation({
-    mutationFn: (variables) => ConversationApi.deleteMessage(variables.conversationId, variables.messageId, token),
+    mutationFn: (variables) => ConversationApi.deleteMessage(variables.conversationId, variables.messageId),
     onSuccess: (data, variables) => {
       ChatCache.removeMessage(queryClient, variables.conversationId, variables.messageId);
-      showToast('Message deleted', 'success');
+      toast.success('Message deleted');
     },
     onError: (error) => {
-      showToast(error.message || 'Failed to delete message', 'error');
+      toast.error(error.message || 'Failed to delete message');
     },
   });
 }
@@ -148,24 +152,23 @@ export function useDeleteMessage() {
  * Menghapus percakapan. Jika yang dihapus sedang dibuka, tampilan kembali ke layar sambutan.
  */
 export function useDeleteConversation() {
-  const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
-  const showToast = useChatStore((state) => state.showToast);
   const setActiveConversationId = useChatStore((state) => state.setActiveConversationId);
 
   return useMutation({
-    mutationFn: (conversationId) => ConversationApi.deleteConversation(conversationId, token),
+    mutationFn: (conversationId) => ConversationApi.deleteConversation(conversationId),
     onSuccess: (data, conversationId) => {
       ChatCache.removeConversation(queryClient, conversationId);
 
-      if (useChatStore.getState().activeConversationId === conversationId) {
+      const activeConversationId = useChatStore.getState().activeConversationId;
+      if (activeConversationId === conversationId) {
         setActiveConversationId(null);
       }
 
-      showToast('Chat deleted', 'success');
+      toast.success('Chat deleted');
     },
     onError: (error) => {
-      showToast(error.message || 'Failed to delete chat', 'error');
+      toast.error(error.message || 'Failed to delete chat');
     },
   });
 }

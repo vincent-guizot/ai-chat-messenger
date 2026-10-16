@@ -1,6 +1,9 @@
 import ApiClient from './ApiClient';
 
 class AuthApi {
+  /**
+   * Mengembalikan { token, user }.
+   */
   static login(credentials) {
     return ApiClient.post('/api/auth/login', credentials);
   }

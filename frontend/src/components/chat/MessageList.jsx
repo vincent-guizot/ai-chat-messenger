@@ -1,10 +1,10 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { LoaderCircle, SearchX } from 'lucide-react';
-import Avatar from '../ui/Avatar';
-import { formatDayLabel } from '../../utils/formatters';
-import { useDeleteMessage } from '../../hooks/useChatData';
-import ConfirmDialog from '../ui/ConfirmDialog';
+import UserAvatar from '@/components/shared/UserAvatar';
+import { formatDayLabel } from '@/utils/formatters';
+import { useDeleteMessage } from '@/hooks/useChatData';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import MessageBubble, { DELIVERY } from './MessageBubble';
 import TypingBubble from './TypingBubble';
 import SuggestionChips, { ASSISTANT_SUGGESTIONS } from './SuggestionChips';
@@ -64,18 +64,18 @@ function getDeliveryStatus(messages, index) {
 function DateSeparator(props) {
   return (
     <div className="flex items-center gap-4 py-0.5" role="separator" aria-label={props.label}>
-      <span className="h-px flex-1 bg-line" />
-      <span className="rounded-full border border-line bg-surface px-3 py-0.5 text-xs font-medium text-ink-muted shadow-sm">
+      <span className="h-px flex-1 bg-border" />
+      <span className="rounded-full border border-border bg-card px-3 py-0.5 text-xs font-medium text-muted-foreground shadow-sm">
         {props.label}
       </span>
-      <span className="h-px flex-1 bg-line" />
+      <span className="h-px flex-1 bg-border" />
     </div>
   );
 }
 
 function CenteredNotice(props) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-2.5 py-16 text-center text-ink-muted">
+    <div className="flex flex-1 flex-col items-center justify-center gap-2.5 py-16 text-center text-muted-foreground">
       {props.icon}
       <p className="max-w-sm text-sm">{props.children}</p>
     </div>
@@ -110,7 +110,7 @@ export default function MessageList(props) {
 
   if (props.isLoading) {
     return (
-      <CenteredNotice icon={<LoaderCircle className="h-5 w-5 animate-spin text-brand-600" />}>Loading messages...</CenteredNotice>
+      <CenteredNotice icon={<LoaderCircle className="size-5 animate-spin text-primary" />}>Loading messages...</CenteredNotice>
     );
   }
 
@@ -132,12 +132,12 @@ export default function MessageList(props) {
   return (
     <div className="flex w-full flex-1 flex-col gap-4 px-4 py-5 sm:px-5">
       {messages.length === 0 && isSearching && (
-        <CenteredNotice icon={<SearchX className="h-5 w-5" />}>No messages match “{props.searchText}”.</CenteredNotice>
+        <CenteredNotice icon={<SearchX className="size-5" />}>No messages match “{props.searchText}”.</CenteredNotice>
       )}
 
       {messages.length === 0 && !isSearching && !props.isAssistant && (
-        <CenteredNotice icon={<Avatar name={otherUserName} size="lg" />}>
-          This is the beginning of your chat with <strong className="text-ink">{otherUserName}</strong>. Say hi! 👋
+        <CenteredNotice icon={<UserAvatar name={otherUserName} size="lg" />}>
+          This is the beginning of your chat with <strong className="text-foreground">{otherUserName}</strong>. Say hi! 👋
         </CenteredNotice>
       )}
 

@@ -2,11 +2,16 @@ import ApiClient from './ApiClient';
 
 class UserApi {
   /**
-   * Semua user lain beserta status online & lastSeenAt.
+   * Daftar kontak (semua user lain) beserta status online.
    */
-  static async getContacts(token) {
-    const data = await ApiClient.get('/api/users', token);
+  static async getContacts() {
+    const data = await ApiClient.get('/api/users');
     return data.users || [];
+  }
+
+  static async getMe() {
+    const data = await ApiClient.get('/api/users/me');
+    return data.user;
   }
 }
 

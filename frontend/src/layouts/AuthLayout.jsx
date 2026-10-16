@@ -60,7 +60,7 @@ function AuthDecoration() {
 export default function AuthLayout(props) {
   return (
     // h-dvh + overflow-hidden: halaman auth selalu pas satu layar, tidak pernah scroll.
-    <div className="relative flex h-dvh items-center justify-center overflow-hidden bg-canvas px-4 py-4">
+    <div className="relative flex h-dvh items-center justify-center overflow-hidden bg-background px-4 py-4">
       <AuthDecoration />
       <div className="relative z-10 w-full max-w-[420px]">{props.children}</div>
     </div>

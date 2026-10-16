@@ -1,41 +1,41 @@
 import ApiClient from './ApiClient';
 
 class ConversationApi {
-  static async getAll(token) {
-    const data = await ApiClient.get('/api/conversations', token);
+  static async getAll() {
+    const data = await ApiClient.get('/api/conversations');
     return data.conversations || [];
   }
 
-  static async getMessages(conversationId, token) {
-    const data = await ApiClient.get(`/api/conversations/${conversationId}/messages`, token);
+  static async getMessages(conversationId) {
+    const data = await ApiClient.get(`/api/conversations/${conversationId}/messages`);
     return data.messages || [];
   }
 
-  static async createAiConversation(token) {
+  static async createAiConversation() {
     const body = {
       type: 'ai',
       title: 'AI Assistant',
       withAi: true,
     };
 
-    const data = await ApiClient.post('/api/conversations', body, token);
+    const data = await ApiClient.post('/api/conversations', body);
     return data.conversation;
-  }
-
-  static async deleteMessage(conversationId, messageId, token) {
-    await ApiClient.delete(`/api/conversations/${conversationId}/messages/${messageId}`, token);
-  }
-
-  static async deleteConversation(conversationId, token) {
-    await ApiClient.delete(`/api/conversations/${conversationId}`, token);
   }
 
   /**
    * Membuka (atau membuat) percakapan langsung dengan user lain.
    */
-  static async openDirectConversation(userId, token) {
-    const data = await ApiClient.post('/api/conversations/direct', { userId: userId }, token);
+  static async openDirectConversation(userId) {
+    const data = await ApiClient.post('/api/conversations/direct', { userId: userId });
     return data.conversation;
+  }
+
+  static async deleteMessage(conversationId, messageId) {
+    await ApiClient.delete(`/api/conversations/${conversationId}/messages/${messageId}`);
+  }
+
+  static async deleteConversation(conversationId) {
+    await ApiClient.delete(`/api/conversations/${conversationId}`);
   }
 }
 

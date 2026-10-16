@@ -3,15 +3,18 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'motion/react';
-import { ArrowRight, Check, CircleAlert, Eye, EyeOff, LoaderCircle, Lock, Mail, UserRound } from 'lucide-react';
-import AuthApi from '../api/AuthApi';
-import { useAuthStore } from '../stores/authStore';
-import AuthLayout from '../layouts/AuthLayout';
-import AppLogo from '../components/ui/AppLogo';
-import BrandName from '../components/ui/BrandName';
-import Button from '../components/ui/Button';
-import TextField from '../components/ui/TextField';
-import { cn } from '../lib/cn';
+import { ArrowRight, CircleAlert, Eye, EyeOff, LoaderCircle, Lock, Mail, UserRound } from 'lucide-react';
+import AuthApi from '@/api/AuthApi';
+import { useAuthStore } from '@/stores/authStore';
+import AuthLayout from '@/layouts/AuthLayout';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import AppLogo from '@/components/shared/AppLogo';
+import BrandName from '@/components/shared/BrandName';
+import FormField from '@/components/shared/FormField';
+import IconButton from '@/components/shared/IconButton';
 
 const MODE_LOGIN = 'login';
 const MODE_SIGNUP = 'signup';
@@ -75,26 +78,12 @@ const SOCIAL_PROVIDERS = [
 
 function RememberMeCheckbox(props) {
   return (
-    <label className="flex min-h-9 cursor-pointer select-none items-center gap-2 text-[13px] text-ink">
-      <input
-        type="checkbox"
-        className="peer sr-only"
-        checked={props.checked}
-        onChange={(event) => props.onChange(event.target.checked)}
-      />
-      <span
-        className={cn(
-          'flex h-[18px] w-[18px] items-center justify-center rounded-[5px] border transition-colors',
-          'peer-focus-visible:ring-2 peer-focus-visible:ring-brand-500 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface',
-          props.checked && 'border-brand-600 bg-brand-600',
-          !props.checked && 'border-line bg-surface',
-        )}
-        aria-hidden="true"
-      >
-        {props.checked && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
-      </span>
-      Remember me
-    </label>
+    <div className="flex min-h-9 items-center gap-2">
+      <Checkbox id="remember-me" checked={props.checked} onCheckedChange={props.onChange} />
+      <Label htmlFor="remember-me" className="cursor-pointer text-[13px] font-normal">
+        Remember me
+      </Label>
+    </div>
   );
 }
 
@@ -108,15 +97,9 @@ function PasswordVisibilityToggle(props) {
   }
 
   return (
-    <button
-      type="button"
-      onClick={props.onToggle}
-      className="rounded-sm p-1 text-ink-muted transition-colors hover:text-ink"
-      aria-label={label}
-      title={label}
-    >
-      <Icon className="h-[18px] w-[18px]" />
-    </button>
+    <IconButton label={label} size="icon-sm" onClick={props.onToggle} tabIndex={-1}>
+      <Icon className="size-[18px]" />
+    </IconButton>
   );
 }
 
@@ -189,7 +172,7 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
-        className="rounded-xl border border-line bg-surface px-5 py-6 shadow-lg sm:px-7 short:py-5"
+        className="rounded-xl border border-border bg-card px-5 py-6 shadow-lg sm:px-7 short:py-5"
       >
         {/* Brand: logo + nama satu baris agar hemat tinggi */}
         <div className="flex items-center justify-center gap-2.5">
@@ -204,13 +187,13 @@ export default function LoginPage() {
           transition={{ duration: 0.25 }}
           className="mt-5 text-center short:mt-4"
         >
-          <h1 className="text-[22px] font-semibold leading-tight text-ink short:text-xl">{text.title}</h1>
-          <p className="mt-1 text-sm text-ink-muted">{text.subtitle}</p>
+          <h1 className="text-[22px] font-semibold leading-tight text-foreground short:text-xl">{text.title}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{text.subtitle}</p>
         </motion.div>
 
         <form onSubmit={form.handleSubmit(handleValidSubmit)} className="mt-5 space-y-3.5 short:mt-4 short:space-y-3" noValidate>
           {mode === MODE_SIGNUP && (
-            <TextField
+            <FormField
               id="name"
               label="Name"
               icon={UserRound}
@@ -222,7 +205,7 @@ export default function LoginPage() {
             />
           )}
 
-          <TextField
+          <FormField
             id="email"
             type="email"
             label="Email"
@@ -234,7 +217,7 @@ export default function LoginPage() {
             {...form.register('email')}
           />
 
-          <TextField
+          <FormField
             id="password"
             type={passwordInputType}
             label="Password"
@@ -256,38 +239,34 @@ export default function LoginPage() {
             <RememberMeCheckbox checked={rememberMe} onChange={setRememberMe} />
 
             {mode === MODE_LOGIN && (
-              <button
-                type="button"
-                onClick={handleForgotPassword}
-                className="min-h-9 text-[13px] font-semibold text-brand-600 transition-colors hover:text-brand-700 dark:text-brand-300"
-              >
+              <Button variant="link" size="sm" onClick={handleForgotPassword} className="h-9 px-0 text-[13px] dark:text-brand-300">
                 Forgot password?
-              </button>
+              </Button>
             )}
           </div>
 
           {errorMessage && (
             <div
-              className="flex items-center gap-2 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-[13px] text-danger"
+              className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
               role="alert"
             >
-              <CircleAlert className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
               {errorMessage}
             </div>
           )}
 
-          <Button type="submit" size="sm" fullWidth disabled={isLoading} className="shadow-md">
-            {isLoading && <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />}
+          <Button type="submit" disabled={isLoading} className="w-full shadow-md">
+            {isLoading && <LoaderCircle className="animate-spin" aria-hidden="true" />}
             {isLoading && text.submitting}
             {!isLoading && text.submit}
-            {!isLoading && <ArrowRight className="h-4 w-4" aria-hidden="true" />}
+            {!isLoading && <ArrowRight aria-hidden="true" />}
           </Button>
         </form>
 
         <div className="my-4 flex items-center gap-3 short:my-2.5">
-          <span className="h-px flex-1 bg-line" />
-          <span className="text-xs text-ink-muted">or continue with</span>
-          <span className="h-px flex-1 bg-line" />
+          <Separator className="flex-1" />
+          <span className="text-xs text-muted-foreground">or continue with</span>
+          <Separator className="flex-1" />
         </div>
 
         <div className="grid grid-cols-3 gap-2.5">
@@ -295,25 +274,20 @@ export default function LoginPage() {
             <Button
               key={provider.label}
               variant="outline"
-              size="sm"
               onClick={provider.onClick}
               disabled={isLoading}
-              className="h-10 text-[13px] short:h-9"
+              className="text-[13px] short:h-9"
             >
               {provider.label}
             </Button>
           ))}
         </div>
 
-        <p className="mt-4 text-center text-[13px] text-ink-muted short:mt-3">
+        <p className="mt-4 text-center text-[13px] text-muted-foreground short:mt-3">
           {text.switchQuestion}{' '}
-          <button
-            type="button"
-            onClick={switchMode}
-            className="font-semibold text-brand-600 transition-colors hover:text-brand-700 dark:text-brand-300"
-          >
+          <Button variant="link" onClick={switchMode} className="h-auto p-0 text-[13px] dark:text-brand-300">
             {text.switchAction}
-          </button>
+          </Button>
         </p>
       </motion.main>
     </AuthLayout>

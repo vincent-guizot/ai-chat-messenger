@@ -1,6 +1,7 @@
 import { Bot, UserRound, UsersRound } from 'lucide-react';
-import { cn } from '../../lib/cn';
-import { SIDEBAR_TABS } from '../../stores/uiStore';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { SIDEBAR_TABS } from '@/stores/uiStore';
 
 const NAV_ITEMS = [
   { tab: SIDEBAR_TABS.assistant, label: 'AI Assistant', icon: Bot },
@@ -9,7 +10,7 @@ const NAV_ITEMS = [
 ];
 
 /**
- * Angka kecil di kanan menu: jumlah pesan belum dibaca (merah) atau user online (biru).
+ * Angka kecil di kanan menu: jumlah pesan belum dibaca (merah) atau user online (hijau).
  */
 function NavCounter(props) {
   if (props.count <= 0) {
@@ -17,16 +18,9 @@ function NavCounter(props) {
   }
 
   return (
-    <span
-      className={cn(
-        'ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold leading-none text-white',
-        props.tone === 'danger' && 'bg-danger',
-        props.tone === 'success' && 'bg-success',
-      )}
-      aria-label={props.label}
-    >
+    <Badge variant={props.variant} className="ml-auto h-5 min-w-5 px-1.5" aria-label={props.label}>
       {props.count}
-    </span>
+    </Badge>
   );
 }
 
@@ -46,20 +40,20 @@ export default function SidebarNav(props) {
             aria-pressed={isActive}
             className={cn(
               'flex h-10 w-full items-center gap-3 rounded-md px-3 text-left text-base font-medium transition-colors',
-              isActive && 'bg-soft text-brand-700 dark:text-brand-300',
-              !isActive && 'text-ink hover:bg-tint',
+              isActive && 'bg-accent text-brand-700 dark:text-brand-300',
+              !isActive && 'text-foreground hover:bg-muted',
               props.isCollapsed && 'justify-center px-0',
             )}
           >
-            <Icon className={cn('h-[18px] w-[18px] shrink-0', isActive && 'text-brand-600 dark:text-brand-300')} aria-hidden="true" />
+            <Icon className={cn('size-[18px] shrink-0', isActive && 'text-primary dark:text-brand-300')} aria-hidden="true" />
             {!props.isCollapsed && <span className="truncate">{item.label}</span>}
 
             {!props.isCollapsed && item.tab === SIDEBAR_TABS.direct && (
-              <NavCounter count={props.unreadDirectCount} tone="danger" label={`${props.unreadDirectCount} unread`} />
+              <NavCounter count={props.unreadDirectCount} variant="destructive" label={`${props.unreadDirectCount} unread`} />
             )}
 
             {!props.isCollapsed && item.tab === SIDEBAR_TABS.contacts && (
-              <NavCounter count={props.onlineCount} tone="success" label={`${props.onlineCount} online`} />
+              <NavCounter count={props.onlineCount} variant="success" label={`${props.onlineCount} online`} />
             )}
           </button>
         );

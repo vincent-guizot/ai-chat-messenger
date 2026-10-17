@@ -6,7 +6,10 @@
  *   - judul         # Judul
  *   - daftar        1. item   /   - item
  *   - paragraf
- *   - inline        `kode`  dan  **tebal**
+ *   - tabel         | a | b |  (dengan baris pemisah |---|---|)
+ *   - inline        `kode`, **tebal**, [teks](url), ![alt](url), dan URL polos
+ *
+ * Hanya URL http(s) yang dirender sebagai tautan / gambar.
  *
  * Hasilnya berupa data (bukan HTML), lalu dirender oleh components/chat/MessageContent.jsx.
  * Dengan begitu tidak ada HTML dari server yang dirender langsung (aman dari XSS).
@@ -16,6 +19,18 @@ const CODE_FENCE = '```';
 const ORDERED_ITEM_PATTERN = /^\s*\d+[.)]\s+(.*)$/;
 const UNORDERED_ITEM_PATTERN = /^\s*[-*•]\s+(.*)$/;
 const HEADING_PATTERN = /^(#{1,3})\s+(.*)$/;
+
+const TABLE_ROW_PATTERN = /^\s*\|.*\|\s*$/;
+const TABLE_SEPARATOR_PATTERN = /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/;
+
+function splitTableRow(line) {
+  return line
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/\|$/, '')
+    .split('|')
+    .map((cell) => cell.trim());
+}
 
 export function parseMarkdown(text) {
   const lines = (text || '').replace(/\r\n/g, '\n').split('\n');
@@ -56,6 +71,23 @@ export function parseMarkdown(text) {
     if (trimmedLine === '') {
       flushParagraph();
       index = index + 1;
+      continue;
+    }
+
+    // Tabel: baris header, baris pemisah (|---|---|), lalu baris data.
+    if (TABLE_ROW_PATTERN.test(line) && index + 1 < lines.length && TABLE_SEPARATOR_PATTERN.test(lines[index + 1])) {
+      flushParagraph();
+
+      const header = splitTableRow(line);
+      const rows = [];
+      index = index + 2;
+
+      while (index < lines.length && TABLE_ROW_PATTERN.test(lines[index])) {
+        rows.push(splitTableRow(lines[index]));
+        index = index + 1;
+      }
+
+      blocks.push({ type: 'table', header: header, rows: rows });
       continue;
     }
 
@@ -100,7 +132,10 @@ export function parseMarkdown(text) {
   return blocks;
 }
 
-const INLINE_PATTERN = /(`[^`]+`|\*\*[^*]+\*\*)/g;
+const INLINE_PATTERN = /(`[^`]+`|\*\*[^*]+\*\*|!\[[^\]]*\]\([^)\s]+\)|\[[^\]]+\]\([^)\s]+\)|https?:\/\/[^\s<>()]+)/g;
+const IMAGE_PATTERN = /^!\[([^\]]*)\]\(([^)\s]+)\)$/;
+const LINK_PATTERN = /^\[([^\]]+)\]\(([^)\s]+)\)$/;
+const SAFE_URL_PATTERN = /^https?:\/\//i;
 
 /**
  * Memecah satu baris teks menjadi potongan: text, code, atau bold.
@@ -115,6 +150,20 @@ export function parseInline(text) {
 
     if (part.startsWith('**') && part.endsWith('**')) {
       return { type: 'bold', text: part.slice(2, -2) };
+    }
+
+    const imageMatch = part.match(IMAGE_PATTERN);
+    if (imageMatch && SAFE_URL_PATTERN.test(imageMatch[2])) {
+      return { type: 'image', alt: imageMatch[1], url: imageMatch[2] };
+    }
+
+    const linkMatch = part.match(LINK_PATTERN);
+    if (linkMatch && SAFE_URL_PATTERN.test(linkMatch[2])) {
+      return { type: 'link', text: linkMatch[1], url: linkMatch[2] };
+    }
+
+    if (SAFE_URL_PATTERN.test(part)) {
+      return { type: 'link', text: part, url: part };
     }
 
     return { type: 'text', text: part };

@@ -92,8 +92,8 @@ export default function MessageInput(props) {
   const canSend = !props.disabled && text.trim() !== '';
 
   return (
-    <div className="shrink-0 bg-background px-4 pb-4 pt-1 sm:px-6">
-      <div className="mx-auto w-full max-w-3xl">
+    <div className="shrink-0 bg-background px-4 pb-4 pt-1 sm:px-5">
+      <div className="w-full">
       {props.connectionNotice && (
         <p
           className={cn(

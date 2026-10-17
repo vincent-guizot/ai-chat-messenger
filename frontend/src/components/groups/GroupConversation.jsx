@@ -174,7 +174,7 @@ export default function GroupConversation(props) {
       )}
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-        <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-4 py-5 sm:px-6">
+        <div className="flex w-full flex-1 flex-col gap-4 px-4 py-5 sm:px-5">
           {messages.map((message, index) => {
             const previous = messages[index - 1];
             const sender = resolvePerson(message.senderId, contactsById, user) || { id: message.senderId, name: 'Unknown' };

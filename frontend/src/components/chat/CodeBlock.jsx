@@ -44,7 +44,7 @@ export default function CodeBlock(props) {
         </button>
       </div>
 
-      <pre className="overflow-x-auto px-3 py-2.5 font-mono text-xs leading-relaxed text-foreground">
+      <pre className="max-w-full whitespace-pre-wrap break-words px-3 py-2.5 font-mono text-xs leading-relaxed text-foreground">
         <code>
           {tokens.map((token, index) => {
             if (token.type === 'text') {

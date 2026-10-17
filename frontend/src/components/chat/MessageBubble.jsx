@@ -118,7 +118,7 @@ export default function MessageBubble(props) {
         {!isJumboEmoji && (
           <div
             className={cn(
-              'rounded-lg px-3.5 py-2 text-base leading-relaxed',
+              'min-w-0 max-w-full overflow-hidden rounded-lg px-3.5 py-2 text-base leading-relaxed',
               isOwn && 'rounded-br-sm bg-primary text-primary-foreground shadow-sm',
               !isOwn && !isAssistant && 'rounded-bl-sm border border-border bg-card text-foreground shadow-sm',
               !isOwn && isAssistant && 'rounded-bl-sm border border-ai-line bg-ai-soft text-foreground shadow-sm',

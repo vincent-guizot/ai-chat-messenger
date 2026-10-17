@@ -92,7 +92,8 @@ export default function MessageInput(props) {
   const canSend = !props.disabled && text.trim() !== '';
 
   return (
-    <div className="shrink-0 bg-background px-4 pb-4 pt-1 sm:px-5">
+    <div className="shrink-0 bg-background px-4 pb-4 pt-1 sm:px-6">
+      <div className="mx-auto w-full max-w-3xl">
       {props.connectionNotice && (
         <p
           className={cn(
@@ -146,6 +147,7 @@ export default function MessageInput(props) {
         <Button size="icon-lg" aria-label="Send message" title="Send message" onClick={submit} disabled={!canSend} className="shadow-md">
           <Send className="size-[18px]" />
         </Button>
+      </div>
       </div>
     </div>
   );

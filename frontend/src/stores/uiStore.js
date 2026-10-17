@@ -6,6 +6,23 @@ export const SIDEBAR_TABS = {
   assistant: 'assistant',
   direct: 'direct',
   contacts: 'contacts',
+  groups: 'groups',
+};
+
+/**
+ * Halaman yang tampil di area utama (kartu kanan).
+ *   chat           chat AI / pesan langsung (bawaan)
+ *   groups         Group Chats: daftar grup
+ *   group-chat     Group Chats: percakapan satu grup
+ *   group-details  Group Details
+ *   member-details Member Details
+ */
+export const VIEWS = {
+  chat: 'chat',
+  groups: 'groups',
+  groupChat: 'group-chat',
+  groupDetails: 'group-details',
+  memberDetails: 'member-details',
 };
 
 function readSavedTheme() {
@@ -39,6 +56,9 @@ export const useUiStore = create((set, get) => {
     isSidebarCollapsed: false,
     isMobileSidebarOpen: false,
     activeTab: SIDEBAR_TABS.assistant,
+    view: { name: VIEWS.chat, id: null },
+    // Halaman sebelumnya, dipakai tombol "Back" di Group Details & Member Details.
+    previousView: null,
 
     toggleTheme: () => {
       let nextTheme = 'dark';
@@ -56,6 +76,16 @@ export const useUiStore = create((set, get) => {
 
     setMobileSidebarOpen: (isOpen) => {
       set({ isMobileSidebarOpen: isOpen });
+    },
+
+    openView: (name, id) => {
+      const current = get().view;
+      set({ previousView: current, view: { name: name, id: id || null }, isMobileSidebarOpen: false });
+    },
+
+    goBack: () => {
+      const previous = get().previousView;
+      set({ view: previous || { name: VIEWS.chat, id: null }, previousView: null });
     },
 
     setActiveTab: (tab) => {

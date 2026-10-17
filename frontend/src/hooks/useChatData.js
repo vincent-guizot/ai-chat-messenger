@@ -7,7 +7,7 @@ import { queryKeys } from '@/lib/queryClient';
 import ChatCache from '@/lib/chatCache';
 import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
-import { SIDEBAR_TABS, useUiStore } from '@/stores/uiStore';
+import { SIDEBAR_TABS, VIEWS, useUiStore } from '@/stores/uiStore';
 import { indexContactsById } from '@/utils/conversations';
 
 const EMPTY_LIST = [];
@@ -79,6 +79,7 @@ export function useOpenConversation() {
   const setMobileSidebarOpen = useUiStore((state) => state.setMobileSidebarOpen);
 
   return function openConversation(conversationId) {
+    useUiStore.getState().openView(VIEWS.chat);
     setActiveConversationId(conversationId);
     setMobileSidebarOpen(false);
   };

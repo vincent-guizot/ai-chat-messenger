@@ -130,7 +130,7 @@ export default function MessageList(props) {
   }
 
   return (
-    <div className="flex w-full flex-1 flex-col gap-4 px-4 py-5 sm:px-5">
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-4 py-5 sm:px-6">
       {messages.length === 0 && isSearching && (
         <CenteredNotice icon={<SearchX className="size-5" />}>No messages match “{props.searchText}”.</CenteredNotice>
       )}

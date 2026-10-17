@@ -1,5 +1,9 @@
 import { useAuthStore } from '@/stores/authStore';
 import { toTypingInfo, useChatStore } from '@/stores/chatStore';
+import { VIEWS, useUiStore } from '@/stores/uiStore';
+import { BellOff } from 'lucide-react';
+import { GROUPS } from '@/data/groups';
+import GroupAvatar from '@/components/groups/GroupAvatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import UserAvatar, { toPresenceStatus } from '@/components/shared/UserAvatar';
@@ -231,6 +235,49 @@ export function ContactList(props) {
       subtitleClassName={getPresenceClassName(contact)}
       isCollapsed={props.isCollapsed}
       onClick={() => props.onStartChat(contact.id)}
+      onInfo={() => props.onOpenProfile(contact.id)}
     />
   ));
+}
+
+// --- Tab "Group Chats" --------------------------------------------------------
+
+export function GroupList(props) {
+  const view = useUiStore((state) => state.view);
+  const openView = useUiStore((state) => state.openView);
+
+  return GROUPS.map((group) => {
+    const lastMessage = group.messages[group.messages.length - 1];
+
+    let badge = null;
+    if (group.muted) {
+      badge = <BellOff className="size-3.5 text-muted-foreground" aria-label="Muted" />;
+    } else if (group.unread > 0) {
+      badge = <UnreadBadge count={group.unread} />;
+    }
+
+    let preview;
+    let time;
+    if (lastMessage) {
+      preview = truncate(lastMessage.content, 32);
+      time = formatTime(lastMessage.createdAt);
+    }
+
+    const isActive = view.id === group.id && view.name !== VIEWS.memberDetails;
+
+    return (
+      <SidebarListItem
+        key={group.id}
+        avatar={<GroupAvatar name={group.name} size="md" />}
+        title={group.name}
+        time={time}
+        subtitle={`${group.members.length} members`}
+        preview={preview}
+        badge={badge}
+        isActive={isActive}
+        isCollapsed={props.isCollapsed}
+        onClick={() => openView(VIEWS.groupChat, group.id)}
+      />
+    );
+  });
 }

@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { ChevronsLeft, ChevronsRight, Plus, SquarePen } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { SIDEBAR_TABS, useUiStore } from '@/stores/uiStore';
+import { SIDEBAR_TABS, VIEWS, useUiStore } from '@/stores/uiStore';
+import { GROUPS } from '@/data/groups';
 import { useChatStore } from '@/stores/chatStore';
 import {
   useContactsById,
@@ -27,7 +28,7 @@ import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import IconButton from '@/components/shared/IconButton';
 import SidebarNav from './SidebarNav';
 import UserFooter from './UserFooter';
-import { AssistantConversationList, ContactList, DirectConversationList } from './SidebarLists';
+import { AssistantConversationList, ContactList, DirectConversationList, GroupList } from './SidebarLists';
 
 const EXPANDED_WIDTH = 288;
 const COLLAPSED_WIDTH = 72;
@@ -36,6 +37,7 @@ const EMPTY_LIST = [];
 const SECTION_TITLES = {
   [SIDEBAR_TABS.assistant]: 'AI Chats',
   [SIDEBAR_TABS.direct]: 'Direct Messages',
+  [SIDEBAR_TABS.groups]: 'Group Chats',
   [SIDEBAR_TABS.contacts]: 'Contacts',
 };
 
@@ -72,6 +74,7 @@ function SidebarContent(props) {
 
   const activeTab = useUiStore((state) => state.activeTab);
   const setActiveTab = useUiStore((state) => state.setActiveTab);
+  const openView = useUiStore((state) => state.openView);
   const toggleSidebarCollapsed = useUiStore((state) => state.toggleSidebarCollapsed);
   const activeConversationId = useChatStore((state) => state.activeConversationId);
 
@@ -94,6 +97,22 @@ function SidebarContent(props) {
   const assistantConversations = useMemo(() => conversations.filter(isAssistantConversation), [conversations]);
   const directConversations = useMemo(() => conversations.filter(isDirectConversation), [conversations]);
   const onlineCount = contacts.filter((contact) => contact.online).length;
+  const unreadGroupCount = GROUPS.reduce((total, group) => {
+    if (group.muted) {
+      return total;
+    }
+    return total + group.unread;
+  }, 0);
+
+  function handleTabChange(tab) {
+    setActiveTab(tab);
+
+    if (tab === SIDEBAR_TABS.groups) {
+      openView(VIEWS.groups);
+    } else if (tab !== SIDEBAR_TABS.contacts) {
+      openView(VIEWS.chat);
+    }
+  }
 
   let unreadDirectCount = 0;
   for (const conversation of directConversations) {
@@ -173,10 +192,11 @@ function SidebarContent(props) {
       <div className="relative">
         <SidebarNav
           activeTab={activeTab}
-          onChange={setActiveTab}
+          onChange={handleTabChange}
           isCollapsed={isCollapsed}
           onlineCount={onlineCount}
           unreadDirectCount={unreadDirectCount}
+          unreadGroupCount={unreadGroupCount}
         />
       </div>
 
@@ -188,7 +208,7 @@ function SidebarContent(props) {
           <div className="mb-2 flex items-center justify-between px-3">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{SECTION_TITLES[activeTab]}</h2>
 
-            {activeTab !== SIDEBAR_TABS.contacts && (
+            {activeTab !== SIDEBAR_TABS.contacts && activeTab !== SIDEBAR_TABS.groups && (
               <IconButton label={plusLabel} size="icon-sm" onClick={handlePlusClick} className="-mr-2">
                 <Plus className="size-5" />
               </IconButton>
@@ -196,7 +216,7 @@ function SidebarContent(props) {
           </div>
         )}
 
-        <ScrollArea className="min-h-0 flex-1" viewportClassName="[&>div]:space-y-1">
+        <ScrollArea className="min-h-0 flex-1" viewportClassName="[&>div]:!block [&>div]:space-y-1 [&>div]:pr-1.5">
           {activeTab === SIDEBAR_TABS.assistant && (
             <AssistantConversationList
               conversations={assistantConversations}
@@ -221,12 +241,15 @@ function SidebarContent(props) {
             />
           )}
 
+          {activeTab === SIDEBAR_TABS.groups && <GroupList isCollapsed={isCollapsed} />}
+
           {activeTab === SIDEBAR_TABS.contacts && (
             <ContactList
               contacts={contacts}
               isLoading={contactsQuery.isLoading}
               isCollapsed={isCollapsed}
               onStartChat={(userId) => openDirectConversation.mutate(userId)}
+              onOpenProfile={(userId) => openView(VIEWS.memberDetails, userId)}
             />
           )}
         </ScrollArea>

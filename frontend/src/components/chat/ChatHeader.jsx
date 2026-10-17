@@ -107,15 +107,23 @@ export default function ChatHeader(props) {
 
       {props.hasConversation && (
         <>
-          <UserAvatar isAssistant={props.isAssistant} name={otherUserName} size="md" />
+          <button
+            type="button"
+            onClick={props.onOpenProfile}
+            disabled={!props.onOpenProfile}
+            title={props.onOpenProfile ? 'View profile' : undefined}
+            className="flex min-w-0 flex-1 items-center gap-3 rounded-md text-left enabled:hover:opacity-80"
+          >
+            <UserAvatar isAssistant={props.isAssistant} name={otherUserName} size="md" />
 
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate text-base font-semibold leading-tight text-foreground">{props.title}</h1>
-            <p className={cn('flex items-center gap-1.5 text-xs', status.textClass)}>
-              {status.dotClass && <span className={cn('size-2 shrink-0 rounded-full', status.dotClass)} aria-hidden="true" />}
-              <span className="truncate">{status.text}</span>
-            </p>
-          </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-base font-semibold leading-tight text-foreground">{props.title}</h1>
+              <p className={cn('flex items-center gap-1.5 text-xs', status.textClass)}>
+                {status.dotClass && <span className={cn('size-2 shrink-0 rounded-full', status.dotClass)} aria-hidden="true" />}
+                <span className="truncate">{status.text}</span>
+              </p>
+            </div>
+          </button>
 
           <MessageSearchField value={props.searchText} onChange={props.onSearchChange} />
         </>

@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react';
+import { Trash2, UserRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
  */
 export default function SidebarListItem(props) {
   const canDelete = Boolean(props.onDelete) && !props.isCollapsed;
+  const canShowInfo = Boolean(props.onInfo) && !props.isCollapsed;
 
   let ariaCurrent;
   if (props.isActive) {
@@ -34,11 +35,12 @@ export default function SidebarListItem(props) {
         className={cn(
           'relative flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors',
           props.isActive && 'bg-accent',
+          props.isActive && props.isCollapsed && 'ring-1 ring-primary/40',
           !props.isActive && 'hover:bg-muted',
           props.isCollapsed && 'justify-center px-0',
         )}
       >
-        {props.isActive && <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-primary" aria-hidden="true" />}
+        {props.isActive && !props.isCollapsed && <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-primary" aria-hidden="true" />}
 
         {props.avatar}
 
@@ -66,6 +68,22 @@ export default function SidebarListItem(props) {
           </div>
         )}
       </button>
+
+      {canShowInfo && (
+        <button
+          type="button"
+          onClick={props.onInfo}
+          aria-label={`View ${props.title}'s profile`}
+          title="View profile"
+          className={cn(
+            'absolute right-2 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition',
+            'hover:bg-accent hover:text-primary focus-visible:opacity-100',
+            'opacity-0 group-hover:opacity-100 pointer-coarse:opacity-100',
+          )}
+        >
+          <UserRound className="size-4" aria-hidden="true" />
+        </button>
+      )}
 
       {canDelete && (
         <button

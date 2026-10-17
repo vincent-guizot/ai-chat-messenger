@@ -1,4 +1,4 @@
-import { Bot, UserRound, UsersRound } from 'lucide-react';
+import { Bot, MessagesSquare, UserRound, UsersRound } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { SIDEBAR_TABS } from '@/stores/uiStore';
@@ -6,6 +6,7 @@ import { SIDEBAR_TABS } from '@/stores/uiStore';
 const NAV_ITEMS = [
   { tab: SIDEBAR_TABS.assistant, label: 'AI Assistant', icon: Bot },
   { tab: SIDEBAR_TABS.direct, label: 'Direct Messages', icon: UserRound },
+  { tab: SIDEBAR_TABS.groups, label: 'Group Chats', icon: MessagesSquare },
   { tab: SIDEBAR_TABS.contacts, label: 'Contacts', icon: UsersRound },
 ];
 
@@ -50,6 +51,10 @@ export default function SidebarNav(props) {
 
             {!props.isCollapsed && item.tab === SIDEBAR_TABS.direct && (
               <NavCounter count={props.unreadDirectCount} variant="destructive" label={`${props.unreadDirectCount} unread`} />
+            )}
+
+            {!props.isCollapsed && item.tab === SIDEBAR_TABS.groups && (
+              <NavCounter count={props.unreadGroupCount} variant="destructive" label={`${props.unreadGroupCount} unread`} />
             )}
 
             {!props.isCollapsed && item.tab === SIDEBAR_TABS.contacts && (

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
 import { toTypingInfo, useChatStore } from '@/stores/chatStore';
-import { SIDEBAR_TABS, useUiStore } from '@/stores/uiStore';
+import { SIDEBAR_TABS, VIEWS, useUiStore } from '@/stores/uiStore';
 import useChatSocket from '@/hooks/useChatSocket';
 import useSendMessage from '@/hooks/useSendMessage';
 import { useAutoReadActiveConversation } from '@/hooks/useNotifications';
@@ -21,6 +21,10 @@ import MessageList from '@/components/chat/MessageList';
 import MessageInput from '@/components/chat/MessageInput';
 import WelcomeScreen from '@/components/chat/WelcomeScreen';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
+import GroupChatsPage from '@/pages/GroupChatsPage';
+import GroupDetailsPage from '@/pages/GroupDetailsPage';
+import MemberDetailsPage from '@/pages/MemberDetailsPage';
+import GroupConversation from '@/components/groups/GroupConversation';
 
 const EMPTY_LIST = [];
 
@@ -88,6 +92,8 @@ export default function ChatPage() {
   const connectionStatus = useChatStore((state) => state.connectionStatus);
   const resetChatStore = useChatStore((state) => state.reset);
   const setActiveTab = useUiStore((state) => state.setActiveTab);
+  const view = useUiStore((state) => state.view);
+  const openView = useUiStore((state) => state.openView);
   const setMobileSidebarOpen = useUiStore((state) => state.setMobileSidebarOpen);
   const typing = useChatStore((state) => state.typingByConversation[activeConversationId]);
 
@@ -179,51 +185,60 @@ export default function ChatPage() {
       <Sidebar onLogout={handleLogout} />
 
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-background shadow-card">
-        <ChatHeader
-          hasConversation={Boolean(activeConversation)}
-          title={title}
-          isAssistant={isAssistant}
-          otherUser={otherUser}
-          isTyping={isOtherSideTyping}
-          searchText={searchText}
-          onSearchChange={setSearchText}
-          onNewChat={startNewAiChat}
-          onDeleteChat={() => setIsDeleteChatOpen(true)}
-          onLogout={handleLogout}
-        />
+        {view.name === VIEWS.groups && <GroupChatsPage />}
+        {view.name === VIEWS.groupChat && <GroupConversation groupId={view.id} />}
+        {view.name === VIEWS.groupDetails && <GroupDetailsPage key={view.id} groupId={view.id} />}
+        {view.name === VIEWS.memberDetails && <MemberDetailsPage key={view.id} memberId={view.id} />}
 
-        {!activeConversation && (
-          <WelcomeScreen
-            onStartAiChat={startNewAiChat}
-            onShowContacts={showContacts}
-            isCreating={createAiConversation.isPending}
-          />
-        )}
-
-        {activeConversation && (
+        {view.name === VIEWS.chat && (
           <>
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-              <MessageList
-                conversation={activeConversation}
-                messages={visibleMessages}
-                currentUserId={currentUserId}
-                isAssistant={isAssistant}
-                otherUser={otherUser}
-                typingInfo={typingInfo}
-                isLoading={messagesQuery.isLoading}
-                searchText={searchText}
-                onSuggestion={messageSender.sendMessage}
-              />
-            </div>
-
-            <MessageInput
-              conversationId={activeConversation.id}
-              placeholder={inputPlaceholder}
-              disabled={connectionStatus !== 'connected'}
-              connectionNotice={getConnectionNotice(connectionStatus)}
-              onSend={messageSender.sendMessage}
-              onTyping={messageSender.notifyTyping}
+            <ChatHeader
+              hasConversation={Boolean(activeConversation)}
+              title={title}
+              isAssistant={isAssistant}
+              otherUser={otherUser}
+              isTyping={isOtherSideTyping}
+              searchText={searchText}
+              onSearchChange={setSearchText}
+              onNewChat={startNewAiChat}
+              onDeleteChat={() => setIsDeleteChatOpen(true)}
+              onLogout={handleLogout}
             />
+
+            {!activeConversation && (
+              <WelcomeScreen
+                onStartAiChat={startNewAiChat}
+                onShowContacts={showContacts}
+                isCreating={createAiConversation.isPending}
+              />
+            )}
+
+            {activeConversation && (
+              <>
+                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+                  <MessageList
+                    conversation={activeConversation}
+                    messages={visibleMessages}
+                    currentUserId={currentUserId}
+                    isAssistant={isAssistant}
+                    otherUser={otherUser}
+                    typingInfo={typingInfo}
+                    isLoading={messagesQuery.isLoading}
+                    searchText={searchText}
+                    onSuggestion={messageSender.sendMessage}
+                  />
+                </div>
+
+                <MessageInput
+                  conversationId={activeConversation.id}
+                  placeholder={inputPlaceholder}
+                  disabled={connectionStatus !== 'connected'}
+                  connectionNotice={getConnectionNotice(connectionStatus)}
+                  onSend={messageSender.sendMessage}
+                  onTyping={messageSender.notifyTyping}
+                />
+              </>
+            )}
           </>
         )}
       </main>
